@@ -22,6 +22,73 @@ class UploadHandler {
     }
 
     /* ============================================================
+       =====================  HELPERS  =============================
+       ============================================================ */
+
+    getExtension(name = '') {
+        const m = name.toLowerCase().match(/\.([a-z0-9]+)$/i);
+        return m ? `.${m[1]}` : '';
+    }
+
+    extFromImageMime(mime = '') {
+        const m = mime.toLowerCase();
+        if (m === 'image/jpeg') return '.jpg';
+        if (m === 'image/png') return '.png';
+        if (m === 'image/webp') return '.webp';
+        if (m === 'image/bmp') return '.bmp';
+        if (m === 'image/gif') return '.gif';
+        return '.jpg';
+    }
+
+    extFromVideoMime(mime = '') {
+        const m = mime.toLowerCase();
+        if (m === 'video/mp4') return '.mp4';
+        if (m === 'video/webm') return '.webm';
+        if (m === 'video/ogg') return '.ogg';
+        if (m === 'video/quicktime') return '.mov';
+        if (m === 'video/x-msvideo') return '.avi';
+        if (m === 'video/x-matroska') return '.mkv';
+        return '.mp4';
+    }
+
+    normalizeFilename(baseName, desiredExt) {
+        const ext = this.getExtension(baseName);
+        if (!ext) return `${baseName}${desiredExt}`;
+        return baseName;
+    }
+
+    /**
+     * Crée un File propre depuis un Blob et une URL :
+     * - force une extension si absente
+     * - force un type si blob.type vide (en se basant sur headers)
+     */
+    createFileFromBlob({ blob, url, fallbackKind }) {
+        const utils = window.DeepGuardUtils;
+        const rawName = utils?.getFilenameFromUrl?.(url) || (fallbackKind === 'video' ? 'video' : 'image');
+
+        // Essayer de récupérer content-type via blob.type, sinon fallback
+        const blobType = (blob.type || '').toLowerCase();
+
+        if (fallbackKind === 'image') {
+            const desiredExt = this.extFromImageMime(blobType || 'image/jpeg');
+            const filename = this.normalizeFilename(rawName, desiredExt);
+
+            const type = blobType && blobType.startsWith('image/') ? blobType : 'image/jpeg';
+            return new File([blob], filename, { type });
+        }
+
+        if (fallbackKind === 'video') {
+            const desiredExt = this.extFromVideoMime(blobType || 'video/mp4');
+            const filename = this.normalizeFilename(rawName, desiredExt);
+
+            const type = blobType && blobType.startsWith('video/') ? blobType : 'video/mp4';
+            return new File([blob], filename, { type });
+        }
+
+        return new File([blob], rawName, { type: blobType || 'application/octet-stream' });
+    }
+
+    /* ============================================================
        ===============  URL UPLOADS (Image / Video)  ===============
        ============================================================ */
 
@@ -63,11 +130,6 @@ class UploadHandler {
                 }
             });
         }
-    }
-
-    getProxiedUrl(url) {
-        // Proxy simple (le plus stable en général)
-        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
     }
 
     async fetchWithProxy(url, options = {}) {
@@ -142,19 +204,34 @@ class UploadHandler {
         const loadingText = document.getElementById('loadingText');
 
         try {
+            // (optionnel) validation URL basique
+            if (window.DeepGuardUtils?.validateImageUrl && !window.DeepGuardUtils.validateImageUrl(url)) {
+                throw new Error("URL invalide.");
+            }
+
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
             if (loadingText) loadingText.textContent = "Chargement de l'image...";
 
             const response = await this.fetchWithProxy(url);
-            const blob = await response.blob();
+            const contentTypeHeader = (response.headers.get('content-type') || '').toLowerCase();
 
-            if (!blob.type.startsWith('image/')) {
-                throw new Error("L'URL ne pointe pas vers une image valide.");
+            const blob = await response.blob();
+            const blobType = (blob.type || '').toLowerCase();
+
+            // On accepte si headers OU blob indiquent image/*
+            const isImage = contentTypeHeader.startsWith('image/') || blobType.startsWith('image/');
+            if (!isImage) {
+                throw new Error("L'URL ne pointe pas vers une image valide (content-type non image/*).");
             }
 
-            const filename = window.DeepGuardUtils?.getFilenameFromUrl?.(url) || 'image-from-url.jpg';
-            const file = new File([blob], filename, { type: blob.type });
+            // Normaliser le blob.type si vide
+            const fixedBlob = (blobType && blobType.startsWith('image/'))
+                ? blob
+                : new Blob([blob], { type: contentTypeHeader.startsWith('image/') ? contentTypeHeader : 'image/jpeg' });
 
+            const file = this.createFileFromBlob({ blob: fixedBlob, url, fallbackKind: 'image' });
+
+            // Analyse possible même si URL sans extension → maintenant on force l’extension
             await this.handleImageFile(file);
 
             const imageUrlInput = document.getElementById('imageUrlInput');
@@ -174,28 +251,35 @@ class UploadHandler {
         const loadingText = document.getElementById('loadingText');
 
         try {
+            if (window.DeepGuardUtils?.validateVideoUrl && !window.DeepGuardUtils.validateVideoUrl(url)) {
+                throw new Error("URL invalide.");
+            }
+
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
             if (loadingText) loadingText.textContent = "Chargement de la vidéo...";
 
             const platform = this.detectPlatform(url);
             const isDirect = this.isDirectVideoUrl(url);
 
+            // Plateformes : pas supporté (pas de lien direct)
             if (platform !== 'unknown' && !isDirect) {
-                // Les plateformes ne fournissent pas des liens directs mp4 utilisables en fetch CORS
-                this.showInfo(
-                    `${platform.toUpperCase()} détecté : utilise un lien direct (.mp4/.webm) ou télécharge la vidéo en local.`
-                );
+                this.showInfo(`${platform.toUpperCase()} détecté : utilise un lien direct (.mp4/.webm) ou télécharge la vidéo en local.`);
                 throw new Error("Lien de plateforme non supporté directement.");
             }
 
             const response = await this.fetchWithProxy(url);
+            const contentTypeHeader = (response.headers.get('content-type') || '').toLowerCase();
 
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.startsWith('video/')) {
+            // Cas 1 : le serveur renvoie bien un content-type video/*
+            if (contentTypeHeader.startsWith('video/')) {
                 const videoBlob = await response.blob();
-                const filename = window.DeepGuardUtils?.getFilenameFromUrl?.(url) || 'video.mp4';
-                const file = new File([videoBlob], filename, { type: videoBlob.type || 'video/mp4' });
+                const blobType = (videoBlob.type || '').toLowerCase();
 
+                const fixedBlob = (blobType && blobType.startsWith('video/'))
+                    ? videoBlob
+                    : new Blob([videoBlob], { type: contentTypeHeader });
+
+                const file = this.createFileFromBlob({ blob: fixedBlob, url, fallbackKind: 'video' });
                 await this.handleVideoFile(file);
 
                 const videoUrlInput = document.getElementById('videoUrlInput');
@@ -205,7 +289,27 @@ class UploadHandler {
                 return;
             }
 
-            // Si pas une vidéo directe, tenter extraction depuis HTML
+            // Cas 2 : pas video/* → soit HTML, soit octet-stream
+            // Si URL directe avec extension vidéo, on tente quand même
+            if (isDirect) {
+                const videoBlob = await response.blob();
+                const blobType = (videoBlob.type || '').toLowerCase();
+
+                const fixedBlob = (blobType && blobType.startsWith('video/'))
+                    ? videoBlob
+                    : new Blob([videoBlob], { type: 'video/mp4' });
+
+                const file = this.createFileFromBlob({ blob: fixedBlob, url, fallbackKind: 'video' });
+                await this.handleVideoFile(file);
+
+                const videoUrlInput = document.getElementById('videoUrlInput');
+                if (videoUrlInput) videoUrlInput.value = '';
+
+                this.showSuccess("Vidéo chargée depuis l'URL !");
+                return;
+            }
+
+            // Cas 3 : HTML -> extraction possible
             const html = await response.text();
             const extracted = this.extractVideoUrlFromHtml(html, url);
             if (extracted) {
@@ -235,14 +339,14 @@ class UploadHandler {
                 if (file) {
                     await this.handleImageFile(file);
                 }
-                // ✅ IMPORTANT : permet de re-sélectionner le même fichier sans bug
+                // ✅ permet de re-sélectionner le même fichier sans bug
                 e.target.value = '';
             });
         }
 
         if (imageUploadArea && imageInput) {
             imageUploadArea.addEventListener('click', (e) => {
-                // ✅ Évite le double click déclenché par le bouton interne (qui fait déjà click())
+                // ✅ Évite le double click déclenché par le bouton interne
                 if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
                 imageInput.click();
             });
@@ -259,7 +363,7 @@ class UploadHandler {
                 if (file) {
                     await this.handleVideoFile(file);
                 }
-                // ✅ IMPORTANT : permet de re-sélectionner le même fichier sans bug
+                // ✅ permet de re-sélectionner le même fichier sans bug
                 e.target.value = '';
             });
         }
@@ -361,7 +465,7 @@ class UploadHandler {
             window.DeepGuardUtils.validateVideoFile(file);
             this.currentVideoFile = file;
 
-            // ✅ Preview beaucoup plus robuste
+            // ✅ Preview robuste
             try {
                 await this.displayVideoPreview(file);
             } catch (previewError) {
@@ -403,10 +507,7 @@ class UploadHandler {
     }
 
     /**
-     * Preview vidéo robuste :
-     * - revoke ancien blob
-     * - écoute loadedmetadata/loadeddata/canplay + fallback timeout
-     * - petit play() silencieux pour forcer l'affichage sur certains navigateurs
+     * Preview vidéo robuste
      */
     displayVideoPreview(file) {
         return new Promise((resolve, reject) => {
@@ -414,7 +515,6 @@ class UploadHandler {
             if (!previewVideo) return resolve();
 
             try {
-                // Clean ancienne ressource
                 this.cleanupVideoResources();
 
                 const videoUrl = URL.createObjectURL(file);
@@ -422,7 +522,7 @@ class UploadHandler {
 
                 previewVideo.src = videoUrl;
                 previewVideo.preload = 'metadata';
-                previewVideo.muted = true;         // aide les autoplay policies
+                previewVideo.muted = true;
                 previewVideo.playsInline = true;
 
                 let done = false;
@@ -438,20 +538,17 @@ class UploadHandler {
                 };
 
                 const onLoadedMeta = async () => {
-                    // Avance très légèrement pour afficher une frame sur certains fichiers
                     try {
                         if (previewVideo.duration && previewVideo.duration > 0) {
                             previewVideo.currentTime = Math.min(0.1, previewVideo.duration / 10);
                         }
                     } catch (_) {}
 
-                    // Essai play/pause silencieux (ignore si interdit)
                     try {
                         await previewVideo.play();
                         previewVideo.pause();
                     } catch (_) {}
 
-                    // Si on a metadata c'est déjà bon pour rassurer l'utilisateur
                     finishOk();
                 };
 
@@ -466,7 +563,6 @@ class UploadHandler {
 
                 previewVideo.load();
 
-                // Timeout de sécurité : on n'empêche pas l'analyse si preview capricieuse
                 setTimeout(() => {
                     if (done) return;
                     if (previewVideo.readyState >= 1) finishOk();
@@ -482,13 +578,11 @@ class UploadHandler {
     cleanupVideoResources() {
         const previewVideo = document.getElementById('previewVideo');
 
-        // revoke via store
         if (this._currentVideoObjectUrl) {
             try { URL.revokeObjectURL(this._currentVideoObjectUrl); } catch (_) {}
             this._currentVideoObjectUrl = null;
         }
 
-        // revoke via element.src (si jamais)
         if (previewVideo && previewVideo.src && previewVideo.src.startsWith('blob:')) {
             try { URL.revokeObjectURL(previewVideo.src); } catch (_) {}
         }
@@ -526,10 +620,6 @@ class UploadHandler {
        ======================  RESET HANDLER  ======================
        ============================================================ */
 
-    /**
-     * Reset UI & state (appelé depuis app.html)
-     * type: 'image' | 'video'
-     */
     reset(type) {
         if (type === 'image') {
             this.currentImageFile = null;
@@ -620,7 +710,6 @@ class UploadHandler {
 
             const result = await window.deepGuardAPI.analyzeVideo(this.currentVideoFile);
 
-            // Certains backends renvoient directement {is_deepfake,...} sans success
             if (result && (result.success === undefined || result.success === true)) {
                 this.displayVideoResult(result);
             } else {

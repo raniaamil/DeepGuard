@@ -51,7 +51,6 @@ app.add_middleware(
 )
 
 
-# Statistiques globales
 class APIStats:
     def __init__(self):
         self.total_predictions = 0
@@ -84,28 +83,20 @@ class APIStats:
 stats = APIStats()
 
 
-# Middleware pour logger les requêtes
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
-    
     logger.info(f"Request: {request.method} {request.url.path}")
-    
     response = await call_next(request)
-    
     process_time = time.time() - start_time
     logger.info(f"Response: {response.status_code} - Time: {process_time:.3f}s")
-    
     return response
 
 
-# Charger le modèle au démarrage
 @app.on_event("startup")
 async def startup_event():
-    """Charge le modèle au démarrage de l'API"""
     logger.info(" Démarrage de DeepGuard API v3...")
     
-    # NOUVEAU MODÈLE CONVNEXT
     model_path = Path(__file__).parent.parent.parent / 'models' / 'best_convnext_deepguard_v3.pth'
     
     if not model_path.exists():
@@ -113,8 +104,6 @@ async def startup_event():
         raise FileNotFoundError(f"Modèle ConvNeXt non trouvé : {model_path}")
     
     logger.info(f" Chargement ConvNeXt-Base depuis : {model_path}")
-    
-    # Charger le predictor V3
     get_predictor(model_path=str(model_path), device='cpu')
     
     logger.info(" DeepGuard API v3 prête !")
@@ -123,7 +112,6 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    """Endpoint racine - Informations sur l'API"""
     return {
         "name": "DeepGuard API",
         "version": "1.0.0",
@@ -147,10 +135,8 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check détaillé"""
     from .inference_v3 import _predictor
     
-    # Mémoire
     process = psutil.Process(os.getpid())
     memory_info = process.memory_info()
     
@@ -167,7 +153,6 @@ async def health_check():
 
 @app.get("/metrics")
 async def get_metrics():
-    """Métriques de l'API"""
     return {
         "statistics": stats.get_stats(),
         "model": {
@@ -183,7 +168,6 @@ async def get_metrics():
 
 @app.get("/info")
 async def model_info():
-    """Informations détaillées sur le modèle V3"""
     return {
         "model": {
             "version": "v3",
@@ -213,51 +197,32 @@ async def model_info():
 
 @app.post("/predict")
 async def predict_deepfake(file: UploadFile = File(...)):
-    """
-    Endpoint principal - Détection de deepfake sur une image
-    
-    Args:
-        file: Image uploadée
-        
-    Returns:
-        JSON avec prédiction, confidence et métadonnées
-    """
     logger.info(f" Nouvelle prédiction : {file.filename}")
     
     try:
-        # Validation du fichier
+        # Validation du fichier (maintenant tolérante si pas d'extension)
         validate_image_file(file.filename, file.content_type)
-        
-        # Lire et valider le contenu
+
         contents = await file.read()
         image = validate_image_content(contents)
-        
-        # Valider les dimensions
         validate_image_dimensions(image)
         
         logger.info(f" Image validée : {image.size[0]}x{image.size[1]}")
         
-        # Mesurer le temps
         start_time = time.time()
-        
-        # Prédiction
         predictor = get_predictor()
         result = predictor.predict(image)
         
-        # Temps de traitement
         processing_time = time.time() - start_time
         
-        # Ajouter des métadonnées
         result['processing_time_ms'] = round(processing_time * 1000, 2)
         result['filename'] = file.filename
         result['image_size'] = list(image.size)
         result['file_size_kb'] = round(len(contents) / 1024, 2)
         
-        # Enregistrer les stats
         stats.record_prediction(result['is_deepfake'])
         
         logger.info(f" Prédiction : {result['prediction']} (confidence: {result['confidence']:.2%})")
-        
         return JSONResponse(content=result)
     
     except HTTPException as e:
@@ -276,15 +241,6 @@ async def predict_deepfake(file: UploadFile = File(...)):
 
 @app.post("/predict/batch")
 async def predict_batch(files: List[UploadFile] = File(...)):
-    """
-    Prédiction batch sur plusieurs images
-    
-    Args:
-        files: Liste d'images
-        
-    Returns:
-        Liste de prédictions
-    """
     logger.info(f"📥 Prédiction batch : {len(files)} images")
     
     if len(files) > 10:
@@ -298,13 +254,11 @@ async def predict_batch(files: List[UploadFile] = File(...)):
     
     for idx, file in enumerate(files):
         try:
-            # Validation
             validate_image_file(file.filename, file.content_type)
             contents = await file.read()
             image = validate_image_content(contents)
             validate_image_dimensions(image)
             
-            # Prédiction
             predictor = get_predictor()
             result = predictor.predict(image)
             
@@ -338,30 +292,38 @@ async def predict_batch(files: List[UploadFile] = File(...)):
 # ENDPOINT VIDÉO - NOUVEAU
 # ═══════════════════════════════════════════════════════════════════
 
+def _ext_from_video_content_type(ct: str) -> str:
+    ct = (ct or '').lower()
+    mapping = {
+        'video/mp4': '.mp4',
+        'video/webm': '.webm',
+        'video/ogg': '.ogg',
+        'video/quicktime': '.mov',
+        'video/x-msvideo': '.avi',
+        'video/x-matroska': '.mkv'
+    }
+    return mapping.get(ct, '')
+
 @app.post("/predict/video")
 async def predict_video(file: UploadFile = File(...)):
-    """
-    Analyse de vidéo pour détection de deepfakes
-    
-    Args:
-        file: Fichier vidéo uploadé (.mp4, .avi, .mov, .mkv)
-        
-    Returns:
-        JSON avec analyse complète de la vidéo
-    """
     logger.info(f" Nouvelle analyse vidéo : {file.filename}")
     
-    # Validation du type de fichier
-    video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm'}
+    video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     file_ext = Path(file.filename).suffix.lower()
-    
+
+    # ✅ Si extension absente / invalide, on tente de déduire depuis content_type
     if file_ext not in video_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Format vidéo non supporté: {file_ext}. Formats acceptés: {', '.join(video_extensions)}"
-        )
+        guessed_ext = _ext_from_video_content_type(file.content_type)
+        if guessed_ext and guessed_ext in video_extensions:
+            file_ext = guessed_ext
+            logger.warning(f"⚠️ Extension vidéo déduite depuis content-type: {file.content_type} -> {file_ext}")
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Format vidéo non supporté: {file_ext or '(sans extension)'} / content-type={file.content_type}. "
+                       f"Formats acceptés: {', '.join(sorted(video_extensions))}"
+            )
     
-    # Validation de la taille (limite à 50MB)
     content = await file.read()
     file_size_mb = len(content) / (1024 * 1024)
     
@@ -371,35 +333,29 @@ async def predict_video(file: UploadFile = File(...)):
             detail=f"Fichier trop volumineux: {file_size_mb:.1f}MB. Maximum: 50MB"
         )
     
-    # Sauvegarde temporaire
     temp_dir = tempfile.mkdtemp()
     temp_video_path = Path(temp_dir) / f"video_{int(time.time())}{file_ext}"
     
     try:
-        # Écrire le fichier temporaire
         with open(temp_video_path, 'wb') as f:
             f.write(content)
         
         logger.info(f" Vidéo sauvegardée temporairement : {temp_video_path}")
         logger.info(f" Taille : {file_size_mb:.1f}MB")
         
-        # Créer l'analyseur vidéo
         predictor = get_predictor()
         video_analyzer = create_video_analyzer(predictor, device='cpu')
         
-        # Analyser la vidéo
         result = video_analyzer.analyze_video(
             video_path=str(temp_video_path),
-            max_frames=20,  # Limite à 20 frames pour l'API
-            sample_rate=15  # 1 frame toutes les 15
+            max_frames=20,
+            sample_rate=15
         )
         
-        # Ajouter métadonnées
         result['filename'] = file.filename
         result['file_size_mb'] = round(file_size_mb, 2)
         result['model_version'] = 'ConvNeXt-Base v3'
         
-        # Enregistrer les stats
         if result['success']:
             stats.record_prediction(result['is_deepfake'])
             logger.info(f" Vidéo analysée : {result['prediction']} ({result['confidence']*100:.1f}%)")
@@ -418,7 +374,6 @@ async def predict_video(file: UploadFile = File(...)):
         )
         
     finally:
-        # Nettoyage du fichier temporaire
         try:
             if temp_video_path.exists():
                 temp_video_path.unlink()
@@ -427,13 +382,8 @@ async def predict_video(file: UploadFile = File(...)):
             logger.warning(f" Erreur nettoyage : {e}")
 
 
-# ═══════════════════════════════════════════════════════════════════
-# ENDPOINT INFO VIDÉO
-# ═══════════════════════════════════════════════════════════════════
-
 @app.get("/video/info")
 async def video_info():
-    """Informations sur l'analyse vidéo"""
     return {
         "video_analysis": {
             "supported_formats": [".mp4", ".avi", ".mov", ".mkv", ".webm"],
@@ -457,10 +407,8 @@ async def video_info():
         }
     }
 
-# Import du predictor global
 from .inference_v3 import _predictor
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
-

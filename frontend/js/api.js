@@ -142,14 +142,35 @@ window.DeepGuardUtils = {
     },
 
     /**
-     * Valider un fichier image
+     * Récupérer extension depuis un nom
+     */
+    getExtension(filename = '') {
+        const m = filename.toLowerCase().match(/\.([a-z0-9]+)$/i);
+        return m ? `.${m[1]}` : '';
+    },
+
+    /**
+     * Valider un fichier image (tolérant : MIME OU extension)
      */
     validateImageFile(file) {
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/gif'];
+        const validExts  = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
         const maxSize = 10 * 1024 * 1024; // 10MB
 
-        if (!validTypes.includes(file.type)) {
-            throw new Error(`Format non supporté: ${file.type}. Formats acceptés: JPG, PNG, WebP, BMP, GIF`);
+        const mime = (file.type || '').toLowerCase();
+        const ext  = this.getExtension(file.name || '');
+
+        const mimeOk = validTypes.includes(mime);
+        const extOk  = validExts.includes(ext);
+
+        // Cas fréquent URL : type vide ou octet-stream
+        const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
+
+        if (!(mimeOk || extOk || acceptableUnknownMime)) {
+            throw new Error(
+                `Format non supporté: ${mime || '(mime inconnu)'} ${ext || ''}. ` +
+                `Formats acceptés: JPG, PNG, WebP, BMP, GIF`
+            );
         }
 
         if (file.size > maxSize) {
@@ -160,14 +181,33 @@ window.DeepGuardUtils = {
     },
 
     /**
-     * Valider un fichier vidéo
+     * Valider un fichier vidéo (tolérant : MIME OU extension)
      */
     validateVideoFile(file) {
-        const validTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/ogg'];
+        const validTypes = [
+            'video/mp4',
+            'video/quicktime',     // mov
+            'video/x-msvideo',     // avi
+            'video/webm',
+            'video/ogg',
+            'video/x-matroska'     // mkv (parfois)
+        ];
+        const validExts = ['.mp4', '.mov', '.avi', '.webm', '.ogg', '.mkv', '.flv', '.wmv'];
         const maxSize = 50 * 1024 * 1024; // 50MB
 
-        if (!validTypes.includes(file.type)) {
-            throw new Error(`Format non supporté: ${file.type}. Formats acceptés: MP4, AVI, MOV, WebM, OGG`);
+        const mime = (file.type || '').toLowerCase();
+        const ext  = this.getExtension(file.name || '');
+
+        const mimeOk = validTypes.includes(mime);
+        const extOk  = validExts.includes(ext);
+
+        const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
+
+        if (!(mimeOk || extOk || acceptableUnknownMime)) {
+            throw new Error(
+                `Format non supporté: ${mime || '(mime inconnu)'} ${ext || ''}. ` +
+                `Formats acceptés: MP4, AVI, MOV, WebM, OGG, MKV`
+            );
         }
 
         if (file.size > maxSize) {
@@ -178,24 +218,26 @@ window.DeepGuardUtils = {
     },
 
     /**
-     * Valider une URL d'image
+     * Valider une URL d'image (moins strict : on valide juste l’URL)
+     * Car beaucoup d’URLs n’ont pas d’extension mais renvoient bien image/*
      */
     validateImageUrl(url) {
         try {
             new URL(url);
-            return url.match(/\.(jpg|jpeg|png|webp|bmp|gif)(\?.*)?$/i) !== null;
+            return true;
         } catch {
             return false;
         }
     },
 
     /**
-     * Valider une URL de vidéo (directe)
+     * Valider une URL de vidéo (directe OU non)
+     * On accepte l’URL, le handler fera la déduction via headers / extraction
      */
     validateVideoUrl(url) {
         try {
             new URL(url);
-            return url.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv)(\?.*)?$/i) !== null;
+            return true;
         } catch {
             return false;
         }
@@ -218,6 +260,7 @@ window.DeepGuardUtils = {
             const urlObj = new URL(url);
             const pathname = urlObj.pathname;
             const filename = pathname.split('/').pop();
+            // Si vide -> fallback
             return filename || 'fichier';
         } catch {
             return 'fichier';
