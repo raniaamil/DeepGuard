@@ -258,7 +258,6 @@ class UploadHandler {
       const imageUrlInput = document.getElementById("imageUrlInput");
       if (imageUrlInput) imageUrlInput.value = "";
 
-      this.showSuccess("Image loaded from URL!");
     } catch (err) {
       console.error("URL image error:", err);
       this.showError(err.message || "Error loading the image.");
@@ -284,7 +283,6 @@ class UploadHandler {
       const platform = this.detectPlatform(url);
       if (platform !== "unknown" && !this.isDirectVideoUrl(url)) {
         this.showInfo(`${platform.toUpperCase()} detected: paste a direct link (.mp4/.webm) or upload the video locally.`);
-        throw new Error("Platform link not directly supported.");
       }
 
       if (loadingOverlay) loadingOverlay.style.display = "flex";
@@ -323,7 +321,6 @@ class UploadHandler {
       const videoUrlInput = document.getElementById("videoUrlInput");
       if (videoUrlInput) videoUrlInput.value = "";
 
-      this.showSuccess("Video loaded from URL!");
     } catch (err) {
       console.error("URL video error:", err);
       this.showError(err.message || "Error loading the video.");
@@ -695,11 +692,11 @@ class UploadHandler {
      =====================  NOTIFICATIONS  =======================
      ============================================================ */
 
-  showError(message) { this.showNotification(message, "error"); }
-  showSuccess(message) { this.showNotification(message, "success"); }
-  showInfo(message) { this.showNotification(message, "info"); }
+  showError(message) { this.showNotification(message, "error", "❌"); }
+  showSuccess(message) { this.showNotification(message, "success", "✅"); }
+  showInfo(message) { this.showNotification(message, "info", "ℹ️"); }
 
-  showNotification(message, type = "info") {
+  showNotification(message, type = "info", icon = "ℹ️") {
     const notification = document.createElement("div");
     const bgColor = type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#8b5cf6";
 
@@ -719,7 +716,6 @@ class UploadHandler {
 
     notification.innerHTML = `
       <div style="display:flex; align-items:center; gap:1rem;">
-        <span style="font-size:1.2rem;">${icon}</span>
         <span style="flex:1;">${message}</span>
         <button onclick="this.parentElement.parentElement.remove()"
           style="background:none;border:none;color:white;cursor:pointer;font-size:1.5rem;opacity:.7;">×</button>

@@ -304,6 +304,11 @@ body::before {
     box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
 }
 
+.analyze-btn {
+    display: flex;
+    margin: 20px auto 0 auto;
+}
+
 .btn-secondary {
     display: inline-flex;
     align-items: center;
