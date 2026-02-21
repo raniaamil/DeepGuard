@@ -1,5 +1,5 @@
 """
-API FastAPI pour DeepGuard - VERSION AMÉLIORÉE
+FastAPI API for DeepGuard - IMPROVED VERSION
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
@@ -23,19 +23,18 @@ from .utils import (
 
 from .logger import logger
 
-# Import du module vidéo
+# Import video module
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from video.analyzer import create_video_analyzer
 
-# ✅ Nouveau : download serveur
 import httpx
 
 
-# Créer l'app FastAPI
+# Create FastAPI app
 app = FastAPI(
     title="DeepGuard API",
-    description="API de détection de deepfakes",
+    description="Deepfake detection API",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -95,18 +94,18 @@ async def log_requests(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Démarrage de DeepGuard API v3...")
+    logger.info("Starting DeepGuard API v3...")
 
     model_path = Path(__file__).parent.parent.parent / 'models' / 'best_convnext_deepguard_v3.pth'
 
     if not model_path.exists():
-        logger.error(f"Modèle non trouvé : {model_path}")
-        raise FileNotFoundError(f"Modèle ConvNeXt non trouvé : {model_path}")
+        logger.error(f"Model not found: {model_path}")
+        raise FileNotFoundError(f"ConvNeXt model not found: {model_path}")
 
-    logger.info(f"Chargement ConvNeXt-Base depuis : {model_path}")
+    logger.info(f"Loading ConvNeXt-Base from: {model_path}")
     get_predictor(model_path=str(model_path), device='cpu')
 
-    logger.info("DeepGuard API v3 prête !")
+    logger.info("DeepGuard API v3 ready!")
 
 
 @app.get("/health")
@@ -129,7 +128,7 @@ async def health_check():
 
 @app.post("/predict")
 async def predict_deepfake(file: UploadFile = File(...)):
-    logger.info(f"Nouvelle prédiction image : {file.filename}")
+    logger.info(f"New image prediction: {file.filename}")
 
     try:
         validate_image_file(file.filename, file.content_type)
@@ -156,11 +155,11 @@ async def predict_deepfake(file: UploadFile = File(...)):
         raise e
     except Exception as e:
         stats.record_error()
-        raise HTTPException(status_code=500, detail=f"Erreur lors du traitement : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
 # ═══════════════════════════════════════════════════════════════════
-# ENDPOINT VIDÉO (FICHIER)
+# VIDEO ENDPOINT (FILE UPLOAD)
 # ═══════════════════════════════════════════════════════════════════
 
 def _ext_from_video_content_type(ct: str) -> str:
@@ -178,7 +177,7 @@ def _ext_from_video_content_type(ct: str) -> str:
 
 @app.post("/predict/video")
 async def predict_video(file: UploadFile = File(...)):
-    logger.info(f"Nouvelle analyse vidéo fichier : {file.filename}")
+    logger.info(f"New video file analysis: {file.filename}")
 
     video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     file_ext = Path(file.filename).suffix.lower()
@@ -187,19 +186,19 @@ async def predict_video(file: UploadFile = File(...)):
         guessed_ext = _ext_from_video_content_type(file.content_type)
         if guessed_ext and guessed_ext in video_extensions:
             file_ext = guessed_ext
-            logger.warning(f"Extension vidéo déduite depuis content-type: {file.content_type} -> {file_ext}")
+            logger.warning(f"Video extension inferred from content-type: {file.content_type} -> {file_ext}")
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Format vidéo non supporté: {file_ext or '(sans extension)'} / content-type={file.content_type}. "
-                       f"Formats acceptés: {', '.join(sorted(video_extensions))}"
+                detail=f"Unsupported video format: {file_ext or '(no extension)'} / content-type={file.content_type}. "
+                       f"Accepted formats: {', '.join(sorted(video_extensions))}"
             )
 
     content = await file.read()
     file_size_mb = len(content) / (1024 * 1024)
 
     if file_size_mb > 50:
-        raise HTTPException(status_code=400, detail=f"Fichier trop volumineux: {file_size_mb:.1f}MB. Maximum: 50MB")
+        raise HTTPException(status_code=400, detail=f"File too large: {file_size_mb:.1f}MB. Maximum: 50MB")
 
     temp_dir = tempfile.mkdtemp()
     temp_video_path = Path(temp_dir) / f"video_{int(time.time())}{file_ext}"
@@ -230,7 +229,7 @@ async def predict_video(file: UploadFile = File(...)):
 
     except Exception as e:
         stats.record_error()
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
 
     finally:
         try:
@@ -238,29 +237,29 @@ async def predict_video(file: UploadFile = File(...)):
                 temp_video_path.unlink()
             os.rmdir(temp_dir)
         except Exception as e:
-            logger.warning(f"Erreur nettoyage : {e}")
+            logger.warning(f"Cleanup error: {e}")
 
 
 # ═══════════════════════════════════════════════════════════════════
-# ✅ NOUVEAU : ENDPOINT VIDÉO (URL)
+# VIDEO ENDPOINT (URL)
 # ═══════════════════════════════════════════════════════════════════
 
 @app.post("/predict/video/url")
 async def predict_video_from_url(payload: dict):
     """
-    Télécharge la vidéo côté serveur (pas de CORS), puis analyse.
+    Downloads the video server-side (no CORS), then analyzes it.
     Body: { "url": "https://....mp4" }
     """
     url = (payload or {}).get("url")
     if not url or not isinstance(url, str):
-        raise HTTPException(status_code=400, detail="Champ 'url' manquant ou invalide.")
+        raise HTTPException(status_code=400, detail="Missing or invalid 'url' field.")
 
-    logger.info(f"Analyse vidéo depuis URL : {url}")
+    logger.info(f"Video analysis from URL: {url}")
 
     video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     path_ext = Path(url.split('?')[0]).suffix.lower()
 
-    max_size_bytes = 50 * 1024 * 1024  # 50MB
+    max_size_bytes = 50 * 1024 * 1024
     timeout = httpx.Timeout(connect=15.0, read=60.0, write=60.0, pool=15.0)
 
     temp_dir = tempfile.mkdtemp()
@@ -268,20 +267,17 @@ async def predict_video_from_url(payload: dict):
 
     try:
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            # stream download
             async with client.stream("GET", url, headers={"User-Agent": "DeepGuard/1.0"}) as resp:
                 if resp.status_code >= 400:
-                    raise HTTPException(status_code=400, detail=f"Impossible de télécharger la vidéo (HTTP {resp.status_code}).")
+                    raise HTTPException(status_code=400, detail=f"Unable to download video (HTTP {resp.status_code}).")
 
                 content_type = (resp.headers.get("content-type") or "").lower()
-
-                # Déduire extension (priorité : URL, sinon content-type)
                 file_ext = path_ext if path_ext in video_extensions else _ext_from_video_content_type(content_type)
 
                 if file_ext not in video_extensions:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"URL non supportée. Extension={path_ext or '(aucune)'} / content-type={content_type or '(inconnu)'}."
+                        detail=f"Unsupported URL. Extension={path_ext or '(none)'} / content-type={content_type or '(unknown)'}."
                     )
 
                 temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
@@ -293,11 +289,11 @@ async def predict_video_from_url(payload: dict):
                             continue
                         size += len(chunk)
                         if size > max_size_bytes:
-                            raise HTTPException(status_code=400, detail="Vidéo trop volumineuse (>50MB).")
+                            raise HTTPException(status_code=400, detail="Video too large (>50MB).")
                         f.write(chunk)
 
         file_size_mb = size / (1024 * 1024)
-        logger.info(f"Vidéo URL téléchargée : {temp_video_path} ({file_size_mb:.2f}MB)")
+        logger.info(f"Video downloaded from URL: {temp_video_path} ({file_size_mb:.2f}MB)")
 
         predictor = get_predictor()
         video_analyzer = create_video_analyzer(predictor, device='cpu')
@@ -325,14 +321,14 @@ async def predict_video_from_url(payload: dict):
         raise
     except Exception as e:
         stats.record_error()
-        raise HTTPException(status_code=500, detail=f"Erreur lors du téléchargement/analyse : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Download/analysis error: {str(e)}")
     finally:
         try:
             if temp_video_path and temp_video_path.exists():
                 temp_video_path.unlink()
             os.rmdir(temp_dir)
         except Exception as e:
-            logger.warning(f"Erreur nettoyage URL vidéo : {e}")
+            logger.warning(f"URL video cleanup error: {e}")
 
 
 @app.get("/video/info")

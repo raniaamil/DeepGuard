@@ -262,20 +262,20 @@ class DeepGuardApp {
      * Afficher une notification de succès
      */
     showSuccess(message) {
-        this.showNotification(message, 'success', '✅');
+        this.showNotification(message, 'success', '');
     }
 
     /**
      * Afficher une notification d'erreur
      */
     showError(message) {
-        this.showNotification(message, 'error', '❌');
+        this.showNotification(message, 'error', '');
     }
 
     /**
      * Afficher une notification
      */
-    showNotification(message, type = 'info', icon = 'ℹ️') {
+    showNotification(message, type = 'info', icon = '') {
         const notification = document.createElement('div');
         const bgColor = type === 'success' ? 'var(--success)' : 
                        type === 'error' ? 'var(--error)' : 

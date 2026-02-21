@@ -183,6 +183,6 @@ def get_predictor(model_path: str = None, device: str = 'cpu') -> DeepfakeDetect
         if model_path is None:
             raise ValueError("model_path requis pour initialiser le predictor")
         _predictor = DeepfakeDetectorV3(model_path, device)
-        logger.info("🚀 Predictor V3 initialisé")
+        logger.info(" Predictor V3 initialisé")
     
     return _predictor

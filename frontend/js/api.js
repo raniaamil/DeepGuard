@@ -77,7 +77,7 @@ class DeepGuardAPI {
     }
 
     /**
-     * ✅ NOUVEAU : analyser une vidéo depuis une URL (backend télécharge, pas de CORS)
+     * NOUVEAU : analyser une vidéo depuis une URL (backend télécharge, pas de CORS)
      */
     async analyzeVideoUrl(url) {
         return await this.apiCall('/predict/video/url', {
