@@ -2,9 +2,6 @@
  * DeepGuard API Client
  * Communication avec le backend FastAPI
  */
-window.deepGuardAPI = {
-    baseURL: 'http://localhost:8000',
-};
 
 class DeepGuardAPI {
     constructor() {
@@ -17,7 +14,7 @@ class DeepGuardAPI {
      */
     async apiCall(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
-        
+
         const defaultOptions = {
             timeout: this.timeout,
             headers: {
@@ -53,7 +50,7 @@ class DeepGuardAPI {
     }
 
     /**
-     * Analyser une image
+     * Analyser une image (fichier)
      */
     async analyzeImage(imageFile) {
         const formData = new FormData();
@@ -66,9 +63,9 @@ class DeepGuardAPI {
     }
 
     /**
-     * Analyser une vidéo
+     * Analyser une vidéo (fichier)
      */
-    async analyzeVideo(videoFile, onProgress = null) {
+    async analyzeVideo(videoFile) {
         const formData = new FormData();
         formData.append('file', videoFile);
 
@@ -80,29 +77,32 @@ class DeepGuardAPI {
     }
 
     /**
-     * Obtenir les informations de l'API
+     * ✅ NOUVEAU : analyser une vidéo depuis une URL (backend télécharge, pas de CORS)
      */
+    async analyzeVideoUrl(url) {
+        return await this.apiCall('/predict/video/url', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url }),
+            timeout: 240000 // 4 minutes
+        });
+    }
+
     async getInfo() {
         return await this.apiCall('/info');
     }
 
-    /**
-     * Obtenir les métriques
-     */
     async getMetrics() {
         return await this.apiCall('/metrics');
     }
 
-    /**
-     * Health check
-     */
     async healthCheck() {
         return await this.apiCall('/health');
     }
 
-    /**
-     * Informations sur l'analyse vidéo
-     */
     async getVideoInfo() {
         return await this.apiCall('/video/info');
     }
@@ -113,9 +113,6 @@ window.deepGuardAPI = new DeepGuardAPI();
 
 // Utilitaires
 window.DeepGuardUtils = {
-    /**
-     * Formater la taille des fichiers
-     */
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -124,46 +121,30 @@ window.DeepGuardUtils = {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
 
-    /**
-     * Formater le temps en millisecondes
-     */
     formatProcessingTime(ms) {
-        if (ms < 1000) {
-            return `${Math.round(ms)}ms`;
-        }
+        if (ms < 1000) return `${Math.round(ms)}ms`;
         return `${(ms / 1000).toFixed(1)}s`;
     },
 
-    /**
-     * Créer un délai
-     */
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
 
-    /**
-     * Récupérer extension depuis un nom
-     */
     getExtension(filename = '') {
         const m = filename.toLowerCase().match(/\.([a-z0-9]+)$/i);
         return m ? `.${m[1]}` : '';
     },
 
-    /**
-     * Valider un fichier image (tolérant : MIME OU extension)
-     */
     validateImageFile(file) {
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/gif'];
         const validExts  = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
 
         const mime = (file.type || '').toLowerCase();
         const ext  = this.getExtension(file.name || '');
 
         const mimeOk = validTypes.includes(mime);
         const extOk  = validExts.includes(ext);
-
-        // Cas fréquent URL : type vide ou octet-stream
         const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
 
         if (!(mimeOk || extOk || acceptableUnknownMime)) {
@@ -180,27 +161,23 @@ window.DeepGuardUtils = {
         return true;
     },
 
-    /**
-     * Valider un fichier vidéo (tolérant : MIME OU extension)
-     */
     validateVideoFile(file) {
         const validTypes = [
             'video/mp4',
-            'video/quicktime',     // mov
-            'video/x-msvideo',     // avi
+            'video/quicktime',
+            'video/x-msvideo',
             'video/webm',
             'video/ogg',
-            'video/x-matroska'     // mkv (parfois)
+            'video/x-matroska'
         ];
         const validExts = ['.mp4', '.mov', '.avi', '.webm', '.ogg', '.mkv', '.flv', '.wmv'];
-        const maxSize = 50 * 1024 * 1024; // 50MB
+        const maxSize = 50 * 1024 * 1024;
 
         const mime = (file.type || '').toLowerCase();
         const ext  = this.getExtension(file.name || '');
 
         const mimeOk = validTypes.includes(mime);
         const extOk  = validExts.includes(ext);
-
         const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
 
         if (!(mimeOk || extOk || acceptableUnknownMime)) {
@@ -217,59 +194,31 @@ window.DeepGuardUtils = {
         return true;
     },
 
-    /**
-     * Valider une URL d'image (moins strict : on valide juste l’URL)
-     * Car beaucoup d’URLs n’ont pas d’extension mais renvoient bien image/*
-     */
     validateImageUrl(url) {
-        try {
-            new URL(url);
-            return true;
-        } catch {
-            return false;
-        }
+        try { new URL(url); return true; } catch { return false; }
     },
 
-    /**
-     * Valider une URL de vidéo (directe OU non)
-     * On accepte l’URL, le handler fera la déduction via headers / extraction
-     */
     validateVideoUrl(url) {
-        try {
-            new URL(url);
-            return true;
-        } catch {
-            return false;
-        }
+        try { new URL(url); return true; } catch { return false; }
     },
 
-    /**
-     * Détecter si c'est une URL de plateforme vidéo
-     */
     isVideoPlatform(url) {
         const urlLower = url.toLowerCase();
         const platforms = ['youtube', 'youtu.be', 'vimeo', 'dailymotion', 'tiktok', 'twitter', 'x.com', 'instagram', 'facebook'];
         return platforms.some(platform => urlLower.includes(platform));
     },
 
-    /**
-     * Extraire le nom de fichier depuis une URL
-     */
     getFilenameFromUrl(url) {
         try {
             const urlObj = new URL(url);
             const pathname = urlObj.pathname;
             const filename = pathname.split('/').pop();
-            // Si vide -> fallback
             return filename || 'fichier';
         } catch {
             return 'fichier';
         }
     },
 
-    /**
-     * Animer un compteur
-     */
     animateCounter(element, start, end, duration = 1000) {
         const startTime = performance.now();
         const range = end - start;
@@ -277,15 +226,11 @@ window.DeepGuardUtils = {
         const updateCounter = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
             const easeOut = 1 - Math.pow(1 - progress, 3);
             const value = start + (range * easeOut);
-            
             element.textContent = Math.round(value * 100) / 100;
-            
-            if (progress < 1) {
-                requestAnimationFrame(updateCounter);
-            }
+
+            if (progress < 1) requestAnimationFrame(updateCounter);
         };
 
         requestAnimationFrame(updateCounter);
