@@ -3,11 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
     <title>DeepGuard App - AI Deepfake Detection</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Language Switcher for App Page */
+        .lang-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .lang-btn {
+            background: none;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            padding: 4px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lang-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .lang-btn.active {
+            opacity: 1;
+            border-color: var(--violet-primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .lang-btn svg {
+            display: block;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .lang-switcher {
+                position: absolute;
+                right: 1rem;
+                border-left: none;
+                margin-left: 0;
+                padding-left: 0;
+            }
+        }
+    </style>
 </head>
 <body class="app-body">
     <!-- Navigation -->
@@ -19,7 +76,39 @@
                 </a>
             </div>
             <div class="nav-links">
-                <a href="index.html" class="nav-link">← Back to Home</a>
+                <a href="index.html" class="nav-link" data-i18n="nav_back_home">← Back to Home</a>
+            </div>
+            <!-- Language Switcher -->
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="en" title="English" onclick="window.i18n.setLanguage('en')">
+                    <!-- UK Flag -->
+                    <svg width="24" height="18" viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg">
+                        <clipPath id="uk-clip"><rect width="60" height="30"/></clipPath>
+                        <g clip-path="url(#uk-clip)">
+                            <rect width="60" height="30" fill="#012169"/>
+                            <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+                            <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#uk-diag)"/>
+                            <clipPath id="uk-diag"><path d="M30,15 L60,30 L60,15 L30,0 L0,0 L0,15 L30,30 L60,30 L60,15 Z"/></clipPath>
+                            <path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/>
+                            <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" stroke-width="6"/>
+                        </g>
+                    </svg>
+                </button>
+                <button class="lang-btn" data-lang="fr" title="Français" onclick="window.i18n.setLanguage('fr')">
+                    <!-- French Flag -->
+                    <svg width="24" height="18" viewBox="0 0 3 2" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="1" height="2" x="0" fill="#002395"/>
+                        <rect width="1" height="2" x="1" fill="#FFFFFF"/>
+                        <rect width="1" height="2" x="2" fill="#ED2939"/>
+                    </svg>
+                </button>
+                <button class="lang-btn" data-lang="es" title="Español" onclick="window.i18n.setLanguage('es')">
+                    <!-- Spanish Flag -->
+                    <svg width="24" height="18" viewBox="0 0 750 500" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="750" height="500" fill="#c60b1e"/>
+                        <rect width="750" height="250" y="125" fill="#ffc400"/>
+                    </svg>
+                </button>
             </div>
         </div>
     </nav>
@@ -28,14 +117,14 @@
     <div class="app-container">
         <!-- Header -->
         <div class="app-header">
-            <h1 class="app-title">AI Deepfake Detection</h1>
-            <p class="app-subtitle">Upload an image or video to analyze for deepfake manipulation with full explainability</p>
+            <h1 class="app-title" data-i18n="app_title">AI Deepfake Detection</h1>
+            <p class="app-subtitle" data-i18n="app_subtitle">Upload an image or video to analyze for deepfake manipulation with full explainability</p>
         </div>
 
         <!-- Tabs -->
         <div class="analysis-tabs">
-            <button class="tab-btn active" data-tab="image"> Image Analysis</button>
-            <button class="tab-btn" data-tab="video"> Video Analysis</button>
+            <button class="tab-btn active" data-tab="image"><span data-i18n="tab_image">Image Analysis</span></button>
+            <button class="tab-btn" data-tab="video"><span data-i18n="tab_video">Video Analysis</span></button>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -53,17 +142,17 @@
                                 <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
                             </svg>
                         </div>
-                        <h3>Drop an image here or click to browse</h3>
-                        <p>Supported: JPG, PNG, WebP, BMP • Max 10MB</p>
+                        <h3 data-i18n="upload_image_title">Drop an image here or click to browse</h3>
+                        <p data-i18n="upload_image_formats">Supported: JPG, PNG, WebP, BMP • Max 10MB</p>
                         <input type="file" id="imageInput" accept="image/*" style="display: none;">
-                        <button class="btn-primary" onclick="document.getElementById('imageInput').click()">Choose Image</button>
+                        <button class="btn-primary" onclick="document.getElementById('imageInput').click()" data-i18n="upload_btn_image">Choose Image</button>
                     </div>
                 </div>
                 <div class="url-upload-section">
-                    <div class="url-divider"><span>OR</span></div>
+                    <div class="url-divider"><span data-i18n="upload_or">OR</span></div>
                     <div class="url-input-container">
-                        <input type="url" id="imageUrlInput" placeholder="Paste image URL here..." class="url-input">
-                        <button class="btn-secondary btn-small" id="loadImageUrl">Load URL</button>
+                        <input type="url" id="imageUrlInput" data-i18n-placeholder="upload_url_image" placeholder="Paste image URL here..." class="url-input">
+                        <button class="btn-secondary btn-small" id="loadImageUrl" data-i18n="upload_load_url">Load URL</button>
                     </div>
                 </div>
             </div>
@@ -74,8 +163,8 @@
                     <!-- Preview Card -->
                     <div class="preview-card">
                         <h3>
-                            Uploaded Image
-                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('image')">Reset</button>
+                            <span data-i18n="result_uploaded_image">Uploaded Image</span>
+                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('image')" data-i18n="result_reset">Reset</button>
                         </h3>
                         <img id="previewImage" alt="Uploaded image">
                         <div class="file-info">
@@ -86,15 +175,15 @@
 
                     <!-- Result Card -->
                     <div class="preview-card">
-                        <h3>Analysis Result</h3>
+                        <h3 data-i18n="result_analysis">Analysis Result</h3>
                         <div class="result-card" id="imageResultCard">
                             <div class="result-placeholder">
                                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
-                                <p>Click "Analyze" to start detection</p>
+                                <p data-i18n="result_placeholder">Click "Analyze" to start detection</p>
                             </div>
                         </div>
                         <button class="btn-primary analyze-btn" id="analyzeImageBtn">
-                            ANALYZE IMAGE
+                            <span data-i18n="result_analyze_image">ANALYZE IMAGE</span>
                         </button>
                     </div>
                 </div>
@@ -108,36 +197,36 @@
 
             <!-- How It Works Section -->
             <div class="how-it-works-section">
-                <h3> How DeepGuard Works</h3>
+                <h3><span data-i18n="how_title">How DeepGuard Works</span></h3>
                 <div class="how-it-works-grid">
                     <div class="how-card">
                         <div class="how-icon">🧠</div>
-                        <h4>ConvNeXt-Base Model</h4>
-                        <p>89M parameter deep neural network trained on 28,000+ images from FaceForensics++ and Celeb-DF datasets.</p>
+                        <h4 data-i18n="how_convnext_title">ConvNeXt-Base Model</h4>
+                        <p data-i18n="how_convnext_desc">89M parameter deep neural network trained on 28,000+ images from FaceForensics++ and Celeb-DF datasets.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">🔥</div>
-                        <h4>Grad-CAM Visualization</h4>
-                        <p>See exactly where the model focuses its attention to make decisions, highlighting suspicious regions.</p>
+                        <h4 data-i18n="how_gradcam_title">Grad-CAM Visualization</h4>
+                        <p data-i18n="how_gradcam_desc">See exactly where the model focuses its attention to make decisions, highlighting suspicious regions.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">🎯</div>
-                        <h4>Multi-Method Detection</h4>
-                        <p>Trained to detect Deepfakes, Face2Face, FaceSwap, NeuralTextures, and Celeb-DF manipulation methods.</p>
+                        <h4 data-i18n="how_multi_title">Multi-Method Detection</h4>
+                        <p data-i18n="how_multi_desc">Trained to detect Deepfakes, Face2Face, FaceSwap, NeuralTextures, and Celeb-DF manipulation methods.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">📊</div>
-                        <h4>Confidence Scoring</h4>
-                        <p>Get detailed probability distributions and confidence levels to understand the reliability of each prediction.</p>
+                        <h4 data-i18n="how_confidence_title">Confidence Scoring</h4>
+                        <p data-i18n="how_confidence_desc">Get detailed probability distributions and confidence levels to understand the reliability of each prediction.</p>
                     </div>
                 </div>
                 <div class="limitations-section">
-                    <h4>⚠️ Limitations</h4>
+                    <h4 data-i18n="limitations_title">⚠️ Limitations</h4>
                     <div class="limitations-list">
-                        <span class="limitation-tag">Works best on frontal faces</span>
-                        <span class="limitation-tag">May be less accurate on heavily compressed images</span>
-                        <span class="limitation-tag">Optimized for face manipulation detection</span>
-                        <span class="limitation-tag">New manipulation techniques may not be detected</span>
+                        <span class="limitation-tag" data-i18n="limitation_1">Works best on frontal faces</span>
+                        <span class="limitation-tag" data-i18n="limitation_2">May be less accurate on heavily compressed images</span>
+                        <span class="limitation-tag" data-i18n="limitation_3">Optimized for face manipulation detection</span>
+                        <span class="limitation-tag" data-i18n="limitation_4">New manipulation techniques may not be detected</span>
                     </div>
                 </div>
             </div>
@@ -157,17 +246,17 @@
                                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                             </svg>
                         </div>
-                        <h3>Drop a video here or click to browse</h3>
-                        <p>Supported: MP4, AVI, MOV, WebM, MKV • Max 50MB</p>
+                        <h3 data-i18n="upload_video_title">Drop a video here or click to browse</h3>
+                        <p data-i18n="upload_video_formats">Supported: MP4, AVI, MOV, WebM, MKV • Max 50MB</p>
                         <input type="file" id="videoInput" accept="video/*" style="display: none;">
-                        <button class="btn-primary" onclick="document.getElementById('videoInput').click()">Choose Video</button>
+                        <button class="btn-primary" onclick="document.getElementById('videoInput').click()" data-i18n="upload_btn_video">Choose Video</button>
                     </div>
                 </div>
                 <div class="url-upload-section">
-                    <div class="url-divider"><span>OR</span></div>
+                    <div class="url-divider"><span data-i18n="upload_or">OR</span></div>
                     <div class="url-input-container">
-                        <input type="url" id="videoUrlInput" placeholder="Paste direct video URL (.mp4, .webm)..." class="url-input">
-                        <button class="btn-secondary btn-small" id="loadVideoUrl">Load URL</button>
+                        <input type="url" id="videoUrlInput" data-i18n-placeholder="upload_url_video" placeholder="Paste direct video URL (.mp4, .webm)..." class="url-input">
+                        <button class="btn-secondary btn-small" id="loadVideoUrl" data-i18n="upload_load_url">Load URL</button>
                     </div>
                 </div>
             </div>
@@ -178,8 +267,8 @@
                     <!-- Preview Card -->
                     <div class="preview-card">
                         <h3>
-                            Uploaded Video
-                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('video')">Reset</button>
+                            <span data-i18n="result_uploaded_video">Uploaded Video</span>
+                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('video')" data-i18n="result_reset">Reset</button>
                         </h3>
                         <video id="previewVideo" controls></video>
                         <div class="file-info">
@@ -190,15 +279,15 @@
 
                     <!-- Result Card -->
                     <div class="preview-card">
-                        <h3>Analysis Result</h3>
+                        <h3 data-i18n="result_analysis">Analysis Result</h3>
                         <div class="result-card" id="videoResultCard">
                             <div class="result-placeholder">
                                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
-                                <p>Click "Analyze" to start detection</p>
+                                <p data-i18n="result_placeholder">Click "Analyze" to start detection</p>
                             </div>
                         </div>
                         <button class="btn-primary analyze-btn" id="analyzeVideoBtn">
-                            ANALYZE VIDEO
+                            <span data-i18n="result_analyze_video">ANALYZE VIDEO</span>
                         </button>
                     </div>
                 </div>
@@ -218,27 +307,27 @@
 
             <!-- How It Works for Video -->
             <div class="how-it-works-section">
-                <h3> Video Analysis Process</h3>
+                <h3><span data-i18n="how_video_title">Video Analysis Process</span></h3>
                 <div class="how-it-works-grid">
                     <div class="how-card">
                         <div class="how-icon">📹</div>
-                        <h4>Frame Extraction</h4>
-                        <p>Up to 30 frames are sampled from the video to ensure comprehensive coverage while maintaining speed.</p>
+                        <h4 data-i18n="how_frame_title">Frame Extraction</h4>
+                        <p data-i18n="how_frame_desc">Up to 30 frames are sampled from the video to ensure comprehensive coverage while maintaining speed.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">👤</div>
-                        <h4>Face Detection</h4>
-                        <p>MTCNN detects and extracts faces from each frame for individual analysis.</p>
+                        <h4 data-i18n="how_face_title">Face Detection</h4>
+                        <p data-i18n="how_face_desc">MTCNN detects and extracts faces from each frame for individual analysis.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">📈</div>
-                        <h4>Timeline Analysis</h4>
-                        <p>See frame-by-frame predictions visualized on an interactive timeline.</p>
+                        <h4 data-i18n="how_timeline_title">Timeline Analysis</h4>
+                        <p data-i18n="how_timeline_desc">See frame-by-frame predictions visualized on an interactive timeline.</p>
                     </div>
                     <div class="how-card">
                         <div class="how-icon">⚠️</div>
-                        <h4>Suspicious Frame Detection</h4>
-                        <p>The most suspicious frames are highlighted for closer inspection.</p>
+                        <h4 data-i18n="how_suspicious_title">Suspicious Frame Detection</h4>
+                        <p data-i18n="how_suspicious_desc">The most suspicious frames are highlighted for closer inspection.</p>
                     </div>
                 </div>
             </div>
@@ -249,12 +338,14 @@
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <h3 id="loadingText">Analyzing...</h3>
-            <p id="loadingSubtext">This may take a few moments</p>
+            <h3 id="loadingText" data-i18n="loading_analyzing">Analyzing...</h3>
+            <p id="loadingSubtext" data-i18n="loading_wait">This may take a few moments</p>
         </div>
     </div>
 
     <!-- Scripts -->
+    <script src="js/i18n.js"></script>
+    <script src="js/security.js"></script>
     <script src="js/api.js"></script>
     <script src="js/results.js"></script>
     <script src="js/upload.js"></script>
