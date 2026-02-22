@@ -1,6 +1,6 @@
 """
-Analyseur vidéo pour DeepGuard
-Détection de deepfakes frame par frame
+Analyseur vidéo enrichi pour DeepGuard
+Avec timeline des scores par frame et frames suspectes
 """
 
 import cv2
@@ -11,20 +11,20 @@ from pathlib import Path
 import logging
 from typing import Dict, List, Optional, Tuple
 import time
+import base64
+import io
 from facenet_pytorch import MTCNN
 
 logger = logging.getLogger(__name__)
 
 
-class VideoDeepfakeAnalyzer:
+class EnhancedVideoAnalyzer:
     """
-    Video analyzer for deepfake detection
-    
-    Process:
-    1. Extract sampled frames
-    2. Face detection (MTCNN)
-    3. Prediction on each face
-    4. Aggregate results
+    Analyseur vidéo enrichi avec:
+    - Timeline des scores par frame
+    - Extraction des frames les plus suspectes
+    - Métriques détaillées
+    - Visualisations
     """
     
     def __init__(self, deepfake_predictor, device='cpu'):
@@ -48,19 +48,31 @@ class VideoDeepfakeAnalyzer:
             device=self.device
         )
         
-        logger.info(f"VideoAnalyzer initialized on {self.device}")
+        logger.info(f"EnhancedVideoAnalyzer initialized on {self.device}")
 
-    def extract_frames(self, video_path: str, max_frames: int = 30, sample_rate: int = 10) -> List[Tuple[np.ndarray, int]]:
-        """
-        Extract frames from a video
+    def _image_to_base64(self, image: Image.Image, max_size: int = 300) -> str:
+        """Convertit une image PIL en base64 avec redimensionnement"""
+        # Redimensionner pour limiter la taille
+        ratio = min(max_size / image.width, max_size / image.height)
+        if ratio < 1:
+            new_size = (int(image.width * ratio), int(image.height * ratio))
+            image = image.resize(new_size, Image.LANCZOS)
         
-        Args:
-            video_path: chemin vers la vidéo
-            max_frames: nombre maximum de frames à extraire
-            sample_rate: extraire 1 frame toutes les N frames
-            
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG', quality=85)
+        return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    def extract_frames_enhanced(
+        self, 
+        video_path: str, 
+        max_frames: int = 30, 
+        sample_rate: int = 10
+    ) -> Tuple[List[Dict], Dict]:
+        """
+        Extrait les frames avec métadonnées enrichies
+        
         Returns:
-            List of (frame_array, frame_index)
+            (frames_data, video_metadata)
         """
         cap = cv2.VideoCapture(video_path)
         
@@ -69,12 +81,24 @@ class VideoDeepfakeAnalyzer:
         
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         duration = total_frames / fps if fps > 0 else 0
+        
+        video_metadata = {
+            'total_frames': total_frames,
+            'fps': round(fps, 2),
+            'duration_seconds': round(duration, 2),
+            'resolution': f"{width}x{height}",
+            'width': width,
+            'height': height
+        }
         
         logger.info(f"Video: {total_frames} frames, {fps:.1f} FPS, {duration:.1f}s")
         
-        frames = []
+        frames_data = []
         
+        # Calculer les indices à extraire
         if total_frames <= max_frames * sample_rate:
             target_indices = list(range(0, total_frames, sample_rate))
         else:
@@ -82,164 +106,233 @@ class VideoDeepfakeAnalyzer:
         
         target_indices = target_indices[:max_frames]
         
-        for target_idx in target_indices:
+        for i, target_idx in enumerate(target_indices):
             cap.set(cv2.CAP_PROP_POS_FRAMES, target_idx)
             ret, frame = cap.read()
             
             if ret:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frames.append((frame_rgb, target_idx))
+                timestamp = target_idx / fps if fps > 0 else 0
+                
+                frames_data.append({
+                    'frame_index': int(target_idx),
+                    'sequence_index': i,
+                    'timestamp_seconds': round(timestamp, 2),
+                    'timestamp_formatted': self._format_timestamp(timestamp),
+                    'frame_rgb': frame_rgb
+                })
         
         cap.release()
         
-        logger.info(f"{len(frames)} frames extracted out of {total_frames}")
-        return frames
+        logger.info(f"{len(frames_data)} frames extracted")
+        return frames_data, video_metadata
 
-    def detect_faces_in_frames(self, frames: List[Tuple[np.ndarray, int]]) -> List[Dict]:
+    def _format_timestamp(self, seconds: float) -> str:
+        """Formate un timestamp en MM:SS"""
+        minutes = int(seconds // 60)
+        secs = int(seconds % 60)
+        return f"{minutes:02d}:{secs:02d}"
+
+    def analyze_video_enhanced(
+        self, 
+        video_path: str, 
+        max_frames: int = 30, 
+        sample_rate: int = 10,
+        include_thumbnails: bool = True
+    ) -> Dict:
         """
-        Detect faces in frames
+        Analyse vidéo complète avec métriques enrichies
         
         Args:
-            frames: liste de (frame_array, frame_index)
+            video_path: Chemin vers la vidéo
+            max_frames: Nombre max de frames
+            sample_rate: Échantillonnage
+            include_thumbnails: Inclure les miniatures base64
             
         Returns:
-            List of detection results
-        """
-        results = []
-        
-        for frame_rgb, frame_idx in frames:
-            try:
-                pil_img = Image.fromarray(frame_rgb)
-                
-                face_tensor = self.face_detector(pil_img)
-                
-                if face_tensor is not None:
-                    face_array = face_tensor.permute(1, 2, 0).cpu().numpy()
-                    face_array = (face_array * 255).astype(np.uint8)
-                    face_pil = Image.fromarray(face_array)
-                    
-                    results.append({
-                        'frame_index': frame_idx,
-                        'face_detected': True,
-                        'face_image': face_pil,
-                        'original_frame': frame_rgb
-                    })
-                else:
-                    results.append({
-                        'frame_index': frame_idx,
-                        'face_detected': False,
-                        'face_image': None,
-                        'original_frame': frame_rgb
-                    })
-                    
-            except Exception as e:
-                logger.warning(f"Face detection error on frame {frame_idx}: {e}")
-                results.append({
-                    'frame_index': frame_idx,
-                    'face_detected': False,
-                    'face_image': None,
-                    'original_frame': frame_rgb,
-                    'error': str(e)
-                })
-        
-        faces_detected = sum(1 for r in results if r['face_detected'])
-        logger.info(f"Faces detected: {faces_detected}/{len(results)} frames")
-        
-        return results
-
-    def analyze_video(self, video_path: str, max_frames: int = 30, sample_rate: int = 10) -> Dict:
-        """
-        Full video analysis
-        
-        Args:
-            video_path: chemin vers la vidéo
-            max_frames: nombre max de frames à analyser
-            sample_rate: échantillonnage des frames
-            
-        Returns:
-            Dict with analysis results
+            Dict avec résultats détaillés
         """
         start_time = time.time()
         
-        logger.info(f"Video analysis: {video_path}")
+        logger.info(f"Enhanced video analysis: {video_path}")
         
         try:
-            frames = self.extract_frames(video_path, max_frames, sample_rate)
+            # Extraction des frames
+            frames_data, video_metadata = self.extract_frames_enhanced(
+                video_path, max_frames, sample_rate
+            )
             
-            if not frames:
+            if not frames_data:
                 return {
                     'success': False,
                     'error': 'No frames extracted',
-                    'video_path': video_path
+                    'video_path': video_path,
+                    'video_metadata': video_metadata
                 }
             
-            face_results = self.detect_faces_in_frames(frames)
+            # Analyse frame par frame
+            timeline_data = []
+            suspicious_frames = []
+            all_predictions = []
             
-            predictions = []
-            
-            for result in face_results:
-                if result['face_detected'] and result['face_image']:
-                    try:
-                        pred = self.predictor.predict(result['face_image'])
-                        predictions.append({
-                            'frame_index': result['frame_index'],
-                            'prediction': pred,
+            for frame_info in frames_data:
+                frame_rgb = frame_info['frame_rgb']
+                
+                try:
+                    # Détection de visage
+                    pil_img = Image.fromarray(frame_rgb)
+                    face_tensor = self.face_detector(pil_img)
+                    
+                    if face_tensor is not None:
+                        # Convertir le visage détecté
+                        face_array = face_tensor.permute(1, 2, 0).cpu().numpy()
+                        face_array = (face_array * 255).astype(np.uint8)
+                        face_pil = Image.fromarray(face_array)
+                        
+                        # Prédiction
+                        pred = self.predictor.predict(face_pil)
+                        
+                        frame_result = {
+                            'frame_index': frame_info['frame_index'],
+                            'sequence_index': frame_info['sequence_index'],
+                            'timestamp_seconds': frame_info['timestamp_seconds'],
+                            'timestamp_formatted': frame_info['timestamp_formatted'],
+                            'face_detected': True,
                             'is_fake': pred['is_deepfake'],
-                            'confidence': pred['confidence']
+                            'prediction': pred['prediction'],
+                            'confidence': pred['confidence'],
+                            'prob_real': pred['probabilities']['real'],
+                            'prob_fake': pred['probabilities']['fake']
+                        }
+                        
+                        # Ajouter miniature si demandé
+                        if include_thumbnails:
+                            frame_result['thumbnail_base64'] = self._image_to_base64(
+                                pil_img, max_size=200
+                            )
+                        
+                        timeline_data.append(frame_result)
+                        all_predictions.append(pred)
+                        
+                        # Collecter les frames suspectes (fake avec haute confiance)
+                        if pred['is_deepfake'] and pred['confidence'] > 0.7:
+                            suspicious_frames.append({
+                                **frame_result,
+                                'thumbnail_base64': self._image_to_base64(pil_img, max_size=300)
+                            })
+                    else:
+                        timeline_data.append({
+                            'frame_index': frame_info['frame_index'],
+                            'sequence_index': frame_info['sequence_index'],
+                            'timestamp_seconds': frame_info['timestamp_seconds'],
+                            'timestamp_formatted': frame_info['timestamp_formatted'],
+                            'face_detected': False,
+                            'is_fake': None,
+                            'prediction': 'NO_FACE',
+                            'confidence': 0,
+                            'prob_real': 0,
+                            'prob_fake': 0
                         })
-                    except Exception as e:
-                        logger.warning(f"Prediction error on frame {result['frame_index']}: {e}")
+                        
+                except Exception as e:
+                    logger.warning(f"Error on frame {frame_info['frame_index']}: {e}")
+                    timeline_data.append({
+                        'frame_index': frame_info['frame_index'],
+                        'sequence_index': frame_info['sequence_index'],
+                        'timestamp_seconds': frame_info['timestamp_seconds'],
+                        'timestamp_formatted': frame_info['timestamp_formatted'],
+                        'face_detected': False,
+                        'error': str(e)
+                    })
             
-            if not predictions:
+            # Calculer les statistiques
+            valid_predictions = [t for t in timeline_data if t.get('face_detected')]
+            
+            if not valid_predictions:
                 return {
                     'success': False,
-                    'error': 'No analyzable faces found',
+                    'error': 'No faces detected in video',
                     'video_path': video_path,
-                    'frames_extracted': len(frames),
-                    'faces_detected': sum(1 for r in face_results if r['face_detected'])
+                    'video_metadata': video_metadata,
+                    'frames_analyzed': len(frames_data),
+                    'faces_detected': 0
                 }
             
-            fake_predictions = [p for p in predictions if p['is_fake']]
-            real_predictions = [p for p in predictions if not p['is_fake']]
+            # Agrégation des résultats
+            fake_count = sum(1 for p in valid_predictions if p['is_fake'])
+            real_count = len(valid_predictions) - fake_count
             
-            fake_count = len(fake_predictions)
-            real_count = len(real_predictions)
-            total_predictions = len(predictions)
-            
-            fake_confidence_sum = sum(p['confidence'] for p in fake_predictions)
-            real_confidence_sum = sum(p['confidence'] for p in real_predictions)
+            # Calcul pondéré
+            fake_confidences = [p['confidence'] for p in valid_predictions if p['is_fake']]
+            real_confidences = [p['confidence'] for p in valid_predictions if not p['is_fake']]
             
             if fake_count > 0 and real_count > 0:
-                fake_weighted = fake_confidence_sum / fake_count if fake_count > 0 else 0
-                real_weighted = real_confidence_sum / real_count if real_count > 0 else 0
-                
-                fake_score = (fake_count / total_predictions) * fake_weighted
-                real_score = (real_count / total_predictions) * real_weighted
-                
-                is_deepfake = fake_score > real_score
-                confidence = max(fake_score, real_score)
+                fake_weighted = np.mean(fake_confidences) * (fake_count / len(valid_predictions))
+                real_weighted = np.mean(real_confidences) * (real_count / len(valid_predictions))
+                is_deepfake = fake_weighted > real_weighted
+                confidence = max(fake_weighted, real_weighted)
             else:
                 is_deepfake = fake_count > real_count
-                confidence = np.mean([p['confidence'] for p in predictions])
+                all_confidences = [p['confidence'] for p in valid_predictions]
+                confidence = np.mean(all_confidences)
+            
+            # Trier les frames suspectes par confiance
+            suspicious_frames.sort(key=lambda x: x['confidence'], reverse=True)
+            top_suspicious = suspicious_frames[:5]  # Top 5
             
             processing_time = time.time() - start_time
             
+            # Construire le résultat final
             result = {
                 'success': True,
                 'video_path': video_path,
+                
+                # Résultat principal
                 'is_deepfake': bool(is_deepfake),
                 'prediction': 'FAKE' if is_deepfake else 'REAL',
                 'confidence': float(confidence),
-                'processing_time_seconds': float(processing_time),
+                
+                # Métadonnées vidéo
+                'video_metadata': video_metadata,
+                
+                # Statistiques d'analyse
+                'analysis_stats': {
+                    'frames_extracted': len(frames_data),
+                    'frames_with_faces': len(valid_predictions),
+                    'frames_predicted_fake': fake_count,
+                    'frames_predicted_real': real_count,
+                    'fake_percentage': round(fake_count / len(valid_predictions) * 100, 1),
+                    'average_fake_confidence': round(np.mean(fake_confidences), 3) if fake_confidences else 0,
+                    'average_real_confidence': round(np.mean(real_confidences), 3) if real_confidences else 0,
+                    'processing_time_seconds': round(processing_time, 2)
+                },
+                
+                # Timeline pour graphique
+                'timeline': timeline_data,
+                
+                # Frames les plus suspectes
+                'suspicious_frames': top_suspicious,
+                
+                # Interprétation
+                'interpretation': self._generate_interpretation(
+                    is_deepfake, 
+                    confidence, 
+                    fake_count, 
+                    real_count,
+                    timeline_data
+                ),
+                
+                # Infos modèle
+                'model_version': 'ConvNeXt-Base v3',
+                'model_accuracy': '98.05%'
             }
             
-            logger.info(f"Analysis completed: {result['prediction']} ({float(confidence)*100:.1f}%)")
-            logger.info(f"{total_predictions} faces analyzed in {processing_time:.1f}s")
+            logger.info(f"Analysis complete: {result['prediction']} ({confidence*100:.1f}%)")
             
             return result
             
         except Exception as e:
-            logger.error(f"Video analysis error: {e}")
+            logger.error(f"Enhanced video analysis error: {e}")
             return {
                 'success': False,
                 'error': str(e),
@@ -247,16 +340,150 @@ class VideoDeepfakeAnalyzer:
                 'processing_time_seconds': float(time.time() - start_time)
             }
 
-
-def create_video_analyzer(predictor, device='cpu') -> VideoDeepfakeAnalyzer:
-    """
-    Factory function to create a video analyzer
-    
-    Args:
-        predictor: Instance de DeepfakeDetectorV3
-        device: 'cpu' ou 'cuda'
+    def _generate_interpretation(
+        self, 
+        is_deepfake: bool, 
+        confidence: float,
+        fake_count: int,
+        real_count: int,
+        timeline: List[Dict]
+    ) -> Dict:
+        """Génère une interprétation détaillée des résultats vidéo"""
         
-    Returns:
-        Instance of VideoDeepfakeAnalyzer
-    """
-    return VideoDeepfakeAnalyzer(predictor, device)
+        total = fake_count + real_count
+        
+        # Analyser la distribution temporelle
+        temporal_analysis = self._analyze_temporal_distribution(timeline)
+        
+        # Points clés
+        key_points = []
+        
+        if is_deepfake:
+            if fake_count / total > 0.8:
+                key_points.append("Manipulation détectée de manière consistante sur l'ensemble de la vidéo")
+            elif fake_count / total > 0.5:
+                key_points.append("Manipulation détectée sur la majorité des frames analysées")
+            else:
+                key_points.append("Signes de manipulation détectés sur certaines portions de la vidéo")
+            
+            if temporal_analysis['has_suspicious_segments']:
+                key_points.append(f"Segments suspects identifiés: {temporal_analysis['suspicious_segments_count']}")
+        else:
+            if real_count / total > 0.9:
+                key_points.append("Aucun signe de manipulation détecté")
+            else:
+                key_points.append("La vidéo semble authentique malgré quelques frames ambiguës")
+        
+        # Confidence level
+        if confidence >= 0.9:
+            confidence_level = "Très haute confiance"
+            confidence_color = "#10B981"
+        elif confidence >= 0.75:
+            confidence_level = "Haute confiance"
+            confidence_color = "#34D399"
+        elif confidence >= 0.6:
+            confidence_level = "Confiance modérée"
+            confidence_color = "#F59E0B"
+        else:
+            confidence_level = "Faible confiance"
+            confidence_color = "#EF4444"
+        
+        return {
+            'summary': f"{'Deepfake détecté' if is_deepfake else 'Vidéo authentique'} avec {confidence*100:.1f}% de confiance",
+            'key_points': key_points,
+            'confidence_level': confidence_level,
+            'confidence_color': confidence_color,
+            'temporal_analysis': temporal_analysis,
+            'recommendation': self._get_video_recommendation(is_deepfake, confidence, fake_count, total)
+        }
+
+    def _analyze_temporal_distribution(self, timeline: List[Dict]) -> Dict:
+        """Analyse la distribution temporelle des prédictions"""
+        
+        valid_frames = [t for t in timeline if t.get('face_detected') and t.get('is_fake') is not None]
+        
+        if not valid_frames:
+            return {
+                'has_suspicious_segments': False,
+                'suspicious_segments_count': 0,
+                'consistency_score': 0
+            }
+        
+        # Détecter les segments consécutifs de fake
+        suspicious_segments = []
+        current_segment = None
+        
+        for frame in valid_frames:
+            if frame['is_fake']:
+                if current_segment is None:
+                    current_segment = {
+                        'start': frame['timestamp_formatted'],
+                        'start_index': frame['sequence_index'],
+                        'frames': [frame]
+                    }
+                else:
+                    current_segment['frames'].append(frame)
+            else:
+                if current_segment is not None and len(current_segment['frames']) >= 2:
+                    current_segment['end'] = current_segment['frames'][-1]['timestamp_formatted']
+                    current_segment['end_index'] = current_segment['frames'][-1]['sequence_index']
+                    current_segment['avg_confidence'] = np.mean([f['confidence'] for f in current_segment['frames']])
+                    suspicious_segments.append(current_segment)
+                current_segment = None
+        
+        # Fermer le dernier segment si nécessaire
+        if current_segment is not None and len(current_segment['frames']) >= 2:
+            current_segment['end'] = current_segment['frames'][-1]['timestamp_formatted']
+            current_segment['avg_confidence'] = np.mean([f['confidence'] for f in current_segment['frames']])
+            suspicious_segments.append(current_segment)
+        
+        # Score de consistance (à quel point les prédictions sont cohérentes)
+        predictions = [1 if f['is_fake'] else 0 for f in valid_frames]
+        if len(predictions) > 1:
+            consistency = 1 - np.std(predictions)
+        else:
+            consistency = 1.0
+        
+        return {
+            'has_suspicious_segments': len(suspicious_segments) > 0,
+            'suspicious_segments_count': len(suspicious_segments),
+            'suspicious_segments': [
+                {
+                    'start': s['start'],
+                    'end': s['end'],
+                    'frame_count': len(s['frames']),
+                    'avg_confidence': round(s['avg_confidence'], 3)
+                }
+                for s in suspicious_segments
+            ],
+            'consistency_score': round(consistency, 3)
+        }
+
+    def _get_video_recommendation(
+        self, 
+        is_deepfake: bool, 
+        confidence: float,
+        fake_count: int,
+        total: int
+    ) -> str:
+        """Génère une recommandation pour la vidéo"""
+        
+        if is_deepfake:
+            if confidence >= 0.85 and fake_count / total > 0.7:
+                return "Cette vidéo présente de forts indicateurs de manipulation. Nous recommandons fortement de ne pas la considérer comme authentique."
+            elif confidence >= 0.7:
+                return "Des signes significatifs de manipulation ont été détectés. Une vérification manuelle approfondie est conseillée."
+            else:
+                return "Des anomalies ont été détectées mais le résultat est incertain. Une analyse par un expert est recommandée."
+        else:
+            if confidence >= 0.85:
+                return "Cette vidéo semble authentique. Aucun signe de manipulation détecté."
+            elif confidence >= 0.7:
+                return "La vidéo semble probablement authentique, mais quelques frames présentent des ambiguïtés mineures."
+            else:
+                return "Le modèle penche vers l'authenticité mais avec une confiance limitée. Une analyse supplémentaire peut être utile."
+
+
+def create_enhanced_video_analyzer(predictor, device='cpu') -> EnhancedVideoAnalyzer:
+    """Factory function pour créer l'analyseur vidéo enrichi"""
+    return EnhancedVideoAnalyzer(predictor, device)

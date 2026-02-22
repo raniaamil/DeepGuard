@@ -5,19 +5,11 @@ Configuration du logging pour DeepGuard API
 import logging
 import sys
 from pathlib import Path
-from datetime import datetime
 
 
 def setup_logger(name: str = "deepguard", log_file: str = None) -> logging.Logger:
     """
     Configure le logger
-    
-    Args:
-        name: nom du logger
-        log_file: fichier de log (optionnel)
-        
-    Returns:
-        Logger configuré
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)

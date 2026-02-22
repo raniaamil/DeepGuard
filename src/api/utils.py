@@ -30,14 +30,14 @@ def validate_image_file(filename: str, content_type: str) -> None:
     from pathlib import Path
     ext = Path(filename).suffix.lower()
 
-    # ✅ Si pas d'extension : on accepte (le contenu sera vérifié via PIL ensuite)
+    # Si pas d'extension : on accepte (le contenu sera vérifié via PIL)
     if ext == '':
         return
 
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported extension: {ext}. Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}"
+            detail=f"Unsupported extension: {ext}. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
 
@@ -54,7 +54,6 @@ def validate_image_content(content: bytes) -> Image.Image:
     try:
         image = Image.open(io.BytesIO(content))
         image.verify()
-
         image = Image.open(io.BytesIO(content))
         return image
 

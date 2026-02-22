@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="app-body">
+    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
@@ -23,18 +24,25 @@
         </div>
     </nav>
 
+    <!-- Main App Container -->
     <div class="app-container">
+        <!-- Header -->
         <div class="app-header">
             <h1 class="app-title">AI Deepfake Detection</h1>
-            <p class="app-subtitle">Upload an image or video to analyze for deepfake manipulation</p>
+            <p class="app-subtitle">Upload an image or video to analyze for deepfake manipulation with full explainability</p>
         </div>
 
+        <!-- Tabs -->
         <div class="analysis-tabs">
-            <button class="tab-btn active" data-tab="image">Image Analysis</button>
-            <button class="tab-btn" data-tab="video">Video Analysis</button>
+            <button class="tab-btn active" data-tab="image"> Image Analysis</button>
+            <button class="tab-btn" data-tab="video"> Video Analysis</button>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- IMAGE TAB -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
         <div class="tab-content active" id="image-tab">
+            <!-- Upload Section -->
             <div class="upload-section">
                 <div class="upload-area" id="imageUploadArea">
                     <div class="upload-content">
@@ -46,7 +54,7 @@
                             </svg>
                         </div>
                         <h3>Drop an image here or click to browse</h3>
-                        <p>Supported: JPG, PNG, WebP • Max 10MB</p>
+                        <p>Supported: JPG, PNG, WebP, BMP • Max 10MB</p>
                         <input type="file" id="imageInput" accept="image/*" style="display: none;">
                         <button class="btn-primary" onclick="document.getElementById('imageInput').click()">Choose Image</button>
                     </div>
@@ -55,72 +63,102 @@
                     <div class="url-divider"><span>OR</span></div>
                     <div class="url-input-container">
                         <input type="url" id="imageUrlInput" placeholder="Paste image URL here..." class="url-input">
-                        <button class="btn-secondary" id="loadImageUrl">Load Image</button>
+                        <button class="btn-secondary btn-small" id="loadImageUrl">Load URL</button>
                     </div>
                 </div>
             </div>
 
+            <!-- Results Section -->
             <div class="results-section" id="imageResults" style="display: none;">
-                <div class="results-container">
-                    <div class="image-preview">
-                        <div style="display: flex; justify-content: space-between;">
-                            <h3>Uploaded Image</h3>
-                            <button class="btn-secondary" onclick="window.uploadHandler.reset('image')" style="padding: 2px 8px; font-size: 12px;">Reset</button>
-                        </div>
+                <div class="results-grid">
+                    <!-- Preview Card -->
+                    <div class="preview-card">
+                        <h3>
+                            Uploaded Image
+                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('image')">Reset</button>
+                        </h3>
                         <img id="previewImage" alt="Uploaded image">
-                        <div class="image-info">
-                            <span id="imageFileName"></span>
+                        <div class="file-info">
+                            <span id="imageFileName">-</span>
+                            <span id="imageFileSize">-</span>
                         </div>
                     </div>
-                    <div class="analysis-results">
-                        <h3>Analysis Results</h3>
+
+                    <!-- Result Card -->
+                    <div class="preview-card">
+                        <h3>Analysis Result</h3>
                         <div class="result-card" id="imageResultCard">
+                            <div class="result-placeholder">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+                                <p>Click "Analyze" to start detection</p>
                             </div>
-                        <button class="btn-primary analyze-btn" id="analyzeImageBtn">ANALYZE IMAGE</button>
+                        </div>
+                        <button class="btn-primary analyze-btn" id="analyzeImageBtn">
+                            ANALYZE IMAGE
+                        </button>
                     </div>
                 </div>
-                <div class="detailed-results" id="imageDetailedResults" style="display: none;">
-                    <h3>Detailed Analysis</h3>
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <span class="metric-label">Confidence</span>
-                            <span class="metric-value" id="imageConfidence">--</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-label">Accuracy</span>
-                            <span class="metric-value">98.05%</span>
-                        </div>
+
+                <!-- Explainability Section -->
+                <div id="imageExplainability" style="display: none;"></div>
+
+                <!-- Model Metrics Section -->
+                <div id="imageModelMetrics" style="display: none;"></div>
+            </div>
+
+            <!-- How It Works Section -->
+            <div class="how-it-works-section">
+                <h3> How DeepGuard Works</h3>
+                <div class="how-it-works-grid">
+                    <div class="how-card">
+                        <div class="how-icon">🧠</div>
+                        <h4>ConvNeXt-Base Model</h4>
+                        <p>89M parameter deep neural network trained on 28,000+ images from FaceForensics++ and Celeb-DF datasets.</p>
                     </div>
-                    <div class="probability-chart">
-                        <h4>Probability Distribution</h4>
-                        <div class="prob-bars">
-                            <div class="prob-bar">
-                                <span class="prob-label">Real</span>
-                                <div class="prob-track"><div class="prob-fill real" id="probReal"></div></div>
-                                <span class="prob-value" id="probRealValue">--</span>
-                            </div>
-                            <div class="prob-bar">
-                                <span class="prob-label">Fake</span>
-                                <div class="prob-track"><div class="prob-fill fake" id="probFake"></div></div>
-                                <span class="prob-value" id="probFakeValue">--</span>
-                            </div>
-                        </div>
+                    <div class="how-card">
+                        <div class="how-icon">🔥</div>
+                        <h4>Grad-CAM Visualization</h4>
+                        <p>See exactly where the model focuses its attention to make decisions, highlighting suspicious regions.</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon">🎯</div>
+                        <h4>Multi-Method Detection</h4>
+                        <p>Trained to detect Deepfakes, Face2Face, FaceSwap, NeuralTextures, and Celeb-DF manipulation methods.</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon">📊</div>
+                        <h4>Confidence Scoring</h4>
+                        <p>Get detailed probability distributions and confidence levels to understand the reliability of each prediction.</p>
+                    </div>
+                </div>
+                <div class="limitations-section">
+                    <h4>⚠️ Limitations</h4>
+                    <div class="limitations-list">
+                        <span class="limitation-tag">Works best on frontal faces</span>
+                        <span class="limitation-tag">May be less accurate on heavily compressed images</span>
+                        <span class="limitation-tag">Optimized for face manipulation detection</span>
+                        <span class="limitation-tag">New manipulation techniques may not be detected</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- VIDEO TAB -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
         <div class="tab-content" id="video-tab">
+            <!-- Upload Section -->
             <div class="upload-section">
                 <div class="upload-area" id="videoUploadArea">
                     <div class="upload-content">
                         <div class="upload-icon">
                             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                <polygon points="23 7 16 12 23 17 23 7"/>
+                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                             </svg>
                         </div>
                         <h3>Drop a video here or click to browse</h3>
-                        <p>Supported: MP4, AVI, MOV • Max 50MB</p>
+                        <p>Supported: MP4, AVI, MOV, WebM, MKV • Max 50MB</p>
                         <input type="file" id="videoInput" accept="video/*" style="display: none;">
                         <button class="btn-primary" onclick="document.getElementById('videoInput').click()">Choose Video</button>
                     </div>
@@ -128,35 +166,86 @@
                 <div class="url-upload-section">
                     <div class="url-divider"><span>OR</span></div>
                     <div class="url-input-container">
-                        <input type="url" id="videoUrlInput" placeholder="Paste video URL here..." class="url-input">
-                        <button class="btn-secondary" id="loadVideoUrl">Load Video</button>
+                        <input type="url" id="videoUrlInput" placeholder="Paste direct video URL (.mp4, .webm)..." class="url-input">
+                        <button class="btn-secondary btn-small" id="loadVideoUrl">Load URL</button>
                     </div>
                 </div>
             </div>
 
+            <!-- Results Section -->
             <div class="results-section" id="videoResults" style="display: none;">
-                <div class="results-container">
-                    <div class="video-preview">
-                        <div style="display: flex; justify-content: space-between;">
-                            <h3>Uploaded Video</h3>
-                            <button class="btn-secondary" onclick="window.uploadHandler.reset('video')" style="padding: 2px 8px; font-size: 12px;">Reset</button>
-                        </div>
-                        <video id="previewVideo" controls style="width: 100%; max-height: 400px; background: #000; border-radius: 8px; margin-top: 10px;"></video>
-                        <div class="video-info">
-                            <span id="videoFileName"></span>
+                <div class="results-grid">
+                    <!-- Preview Card -->
+                    <div class="preview-card">
+                        <h3>
+                            Uploaded Video
+                            <button class="btn-secondary btn-small" onclick="window.uploadHandler.reset('video')">Reset</button>
+                        </h3>
+                        <video id="previewVideo" controls></video>
+                        <div class="file-info">
+                            <span id="videoFileName">-</span>
+                            <span id="videoFileSize">-</span>
                         </div>
                     </div>
-                    <div class="analysis-results">
-                        <h3>Analysis Results</h3>
+
+                    <!-- Result Card -->
+                    <div class="preview-card">
+                        <h3>Analysis Result</h3>
                         <div class="result-card" id="videoResultCard">
+                            <div class="result-placeholder">
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+                                <p>Click "Analyze" to start detection</p>
                             </div>
-                        <button class="btn-primary analyze-btn" id="analyzeVideoBtn" style="width: 100%; margin-top: 20px;">ANALYZE VIDEO</button>
+                        </div>
+                        <button class="btn-primary analyze-btn" id="analyzeVideoBtn">
+                            ANALYZE VIDEO
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline Section -->
+                <div id="videoTimeline" style="display: none;"></div>
+
+                <!-- Suspicious Frames Section -->
+                <div id="videoSuspiciousFrames" style="display: none;"></div>
+
+                <!-- Analysis Stats Section -->
+                <div id="videoAnalysisStats" style="display: none;"></div>
+
+                <!-- Model Metrics Section -->
+                <div id="videoModelMetrics" style="display: none;"></div>
+            </div>
+
+            <!-- How It Works for Video -->
+            <div class="how-it-works-section">
+                <h3> Video Analysis Process</h3>
+                <div class="how-it-works-grid">
+                    <div class="how-card">
+                        <div class="how-icon">📹</div>
+                        <h4>Frame Extraction</h4>
+                        <p>Up to 30 frames are sampled from the video to ensure comprehensive coverage while maintaining speed.</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon">👤</div>
+                        <h4>Face Detection</h4>
+                        <p>MTCNN detects and extracts faces from each frame for individual analysis.</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon">📈</div>
+                        <h4>Timeline Analysis</h4>
+                        <p>See frame-by-frame predictions visualized on an interactive timeline.</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon">⚠️</div>
+                        <h4>Suspicious Frame Detection</h4>
+                        <p>The most suspicious frames are highlighted for closer inspection.</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-content">
             <div class="loading-spinner"></div>
@@ -165,7 +254,9 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="js/api.js"></script>
+    <script src="js/results.js"></script>
     <script src="js/upload.js"></script>
     <script src="js/main.js"></script>
 </body>

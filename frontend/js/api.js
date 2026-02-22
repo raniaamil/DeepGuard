@@ -1,12 +1,12 @@
 /**
- * DeepGuard API Client
- * Communication avec le backend FastAPI
+ * DeepGuard API Client - Enhanced Version 2.0
+ * Communication avec le backend FastAPI v2
  */
 
 class DeepGuardAPI {
     constructor() {
-        this.baseURL = 'http://localhost:8000';  // Adapter selon ton déploiement
-        this.timeout = 120000; // 2 minutes timeout
+        this.baseURL = 'http://localhost:8000';
+        this.timeout = 180000; // 3 minutes
     }
 
     /**
@@ -50,44 +50,56 @@ class DeepGuardAPI {
     }
 
     /**
-     * Analyser une image (fichier)
+     * Analyser une image avec Grad-CAM
      */
-    async analyzeImage(imageFile) {
+    async analyzeImage(imageFile, includeGradcam = true) {
         const formData = new FormData();
         formData.append('file', imageFile);
 
-        return await this.apiCall('/predict', {
+        const params = new URLSearchParams({ include_gradcam: includeGradcam });
+
+        return await this.apiCall(`/predict?${params}`, {
             method: 'POST',
             body: formData
         });
     }
 
     /**
-     * Analyser une vidéo (fichier)
+     * Analyser une vidéo avec timeline
      */
-    async analyzeVideo(videoFile) {
+    async analyzeVideo(videoFile, maxFrames = 30, includeThumbnails = true) {
         const formData = new FormData();
         formData.append('file', videoFile);
 
-        return await this.apiCall('/predict/video', {
+        const params = new URLSearchParams({
+            max_frames: maxFrames,
+            include_thumbnails: includeThumbnails
+        });
+
+        return await this.apiCall(`/predict/video?${params}`, {
             method: 'POST',
             body: formData,
-            timeout: 180000 // 3 minutes pour les vidéos
+            timeout: 240000
         });
     }
 
     /**
-     * NOUVEAU : analyser une vidéo depuis une URL (backend télécharge, pas de CORS)
+     * Analyser une vidéo depuis URL
      */
-    async analyzeVideoUrl(url) {
-        return await this.apiCall('/predict/video/url', {
+    async analyzeVideoUrl(url, maxFrames = 30, includeThumbnails = true) {
+        const params = new URLSearchParams({
+            max_frames: maxFrames,
+            include_thumbnails: includeThumbnails
+        });
+
+        return await this.apiCall(`/predict/video/url?${params}`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ url }),
-            timeout: 240000 // 4 minutes
+            timeout: 300000
         });
     }
 
@@ -111,7 +123,9 @@ class DeepGuardAPI {
 // Instance globale
 window.deepGuardAPI = new DeepGuardAPI();
 
-// Utilitaires
+/**
+ * Utilitaires
+ */
 window.DeepGuardUtils = {
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -123,7 +137,11 @@ window.DeepGuardUtils = {
 
     formatProcessingTime(ms) {
         if (ms < 1000) return `${Math.round(ms)}ms`;
-        return `${(ms / 1000).toFixed(1)}s`;
+        return `${(ms / 1000).toFixed(2)}s`;
+    },
+
+    formatPercentage(value, decimals = 1) {
+        return `${(value * 100).toFixed(decimals)}%`;
     },
 
     delay(ms) {
@@ -137,58 +155,45 @@ window.DeepGuardUtils = {
 
     validateImageFile(file) {
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/gif'];
-        const validExts  = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
+        const validExts = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
         const maxSize = 10 * 1024 * 1024;
 
         const mime = (file.type || '').toLowerCase();
-        const ext  = this.getExtension(file.name || '');
+        const ext = this.getExtension(file.name || '');
 
         const mimeOk = validTypes.includes(mime);
-        const extOk  = validExts.includes(ext);
+        const extOk = validExts.includes(ext);
         const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
 
         if (!(mimeOk || extOk || acceptableUnknownMime)) {
-            throw new Error(
-                `Format non supporté: ${mime || '(mime inconnu)'} ${ext || ''}. ` +
-                `Formats acceptés: JPG, PNG, WebP, BMP, GIF`
-            );
+            throw new Error(`Unsupported format. Accepted: JPG, PNG, WebP, BMP, GIF`);
         }
 
         if (file.size > maxSize) {
-            throw new Error(`Fichier trop volumineux: ${this.formatFileSize(file.size)}. Maximum: 10MB`);
+            throw new Error(`File too large: ${this.formatFileSize(file.size)}. Maximum: 10MB`);
         }
 
         return true;
     },
 
     validateVideoFile(file) {
-        const validTypes = [
-            'video/mp4',
-            'video/quicktime',
-            'video/x-msvideo',
-            'video/webm',
-            'video/ogg',
-            'video/x-matroska'
-        ];
+        const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/ogg', 'video/x-matroska'];
         const validExts = ['.mp4', '.mov', '.avi', '.webm', '.ogg', '.mkv', '.flv', '.wmv'];
         const maxSize = 50 * 1024 * 1024;
 
         const mime = (file.type || '').toLowerCase();
-        const ext  = this.getExtension(file.name || '');
+        const ext = this.getExtension(file.name || '');
 
         const mimeOk = validTypes.includes(mime);
-        const extOk  = validExts.includes(ext);
+        const extOk = validExts.includes(ext);
         const acceptableUnknownMime = (!mime || mime === 'application/octet-stream') && extOk;
 
         if (!(mimeOk || extOk || acceptableUnknownMime)) {
-            throw new Error(
-                `Format non supporté: ${mime || '(mime inconnu)'} ${ext || ''}. ` +
-                `Formats acceptés: MP4, AVI, MOV, WebM, OGG, MKV`
-            );
+            throw new Error(`Unsupported format. Accepted: MP4, AVI, MOV, WebM, MKV`);
         }
 
         if (file.size > maxSize) {
-            throw new Error(`Fichier trop volumineux: ${this.formatFileSize(file.size)}. Maximum: 50MB`);
+            throw new Error(`File too large: ${this.formatFileSize(file.size)}. Maximum: 50MB`);
         }
 
         return true;
@@ -202,24 +207,40 @@ window.DeepGuardUtils = {
         try { new URL(url); return true; } catch { return false; }
     },
 
-    isVideoPlatform(url) {
-        const urlLower = url.toLowerCase();
-        const platforms = ['youtube', 'youtu.be', 'vimeo', 'dailymotion', 'tiktok', 'twitter', 'x.com', 'instagram', 'facebook'];
-        return platforms.some(platform => urlLower.includes(platform));
-    },
-
     getFilenameFromUrl(url) {
         try {
             const urlObj = new URL(url);
             const pathname = urlObj.pathname;
-            const filename = pathname.split('/').pop();
-            return filename || 'fichier';
+            return pathname.split('/').pop() || 'file';
         } catch {
-            return 'fichier';
+            return 'file';
         }
     },
 
-    animateCounter(element, start, end, duration = 1000) {
+    /**
+     * Crée un graphique de gauge SVG
+     */
+    createGaugeSVG(percentage, color, size = 180) {
+        const strokeWidth = 12;
+        const radius = (size - strokeWidth) / 2;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (percentage / 100) * circumference;
+
+        return `
+            <svg class="gauge-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                <circle class="gauge-bg" cx="${size/2}" cy="${size/2}" r="${radius}"/>
+                <circle class="gauge-fill" cx="${size/2}" cy="${size/2}" r="${radius}"
+                    stroke="${color}"
+                    stroke-dasharray="${circumference}"
+                    stroke-dashoffset="${offset}"/>
+            </svg>
+        `;
+    },
+
+    /**
+     * Anime un compteur
+     */
+    animateCounter(element, start, end, duration = 1000, suffix = '') {
         const startTime = performance.now();
         const range = end - start;
 
@@ -228,11 +249,51 @@ window.DeepGuardUtils = {
             const progress = Math.min(elapsed / duration, 1);
             const easeOut = 1 - Math.pow(1 - progress, 3);
             const value = start + (range * easeOut);
-            element.textContent = Math.round(value * 100) / 100;
+            
+            if (suffix === '%') {
+                element.textContent = value.toFixed(1) + suffix;
+            } else {
+                element.textContent = Math.round(value) + suffix;
+            }
 
-            if (progress < 1) requestAnimationFrame(updateCounter);
+            if (progress < 1) {
+                requestAnimationFrame(updateCounter);
+            }
         };
 
         requestAnimationFrame(updateCounter);
+    },
+
+    /**
+     * Crée les barres de timeline pour la vidéo
+     */
+    createTimelineBars(timeline) {
+        return timeline.map((frame, index) => {
+            let className = 'timeline-bar';
+            let height = 20;
+            let tooltip = frame.timestamp_formatted;
+
+            if (frame.face_detected && frame.is_fake !== null) {
+                className += frame.is_fake ? ' fake' : ' real';
+                height = Math.max(20, frame.confidence * 100);
+                tooltip += ` | ${frame.prediction} (${(frame.confidence * 100).toFixed(1)}%)`;
+            } else {
+                className += ' no-face';
+                tooltip += ' | No face detected';
+            }
+
+            return `<div class="${className}" style="height: ${height}%" data-tooltip="${tooltip}" data-index="${index}"></div>`;
+        }).join('');
+    },
+
+    /**
+     * Génère la couleur en fonction de la confiance
+     */
+    getConfidenceColor(confidence) {
+        if (confidence >= 0.95) return '#10B981';
+        if (confidence >= 0.85) return '#34D399';
+        if (confidence >= 0.70) return '#F59E0B';
+        if (confidence >= 0.55) return '#EF4444';
+        return '#6B7280';
     }
 };
