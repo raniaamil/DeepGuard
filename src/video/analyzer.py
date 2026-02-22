@@ -360,36 +360,36 @@ class EnhancedVideoAnalyzer:
         
         if is_deepfake:
             if fake_count / total > 0.8:
-                key_points.append("Manipulation détectée de manière consistante sur l'ensemble de la vidéo")
+                key_points.append("Consistent manipulation detected throughout the entire video.")
             elif fake_count / total > 0.5:
-                key_points.append("Manipulation détectée sur la majorité des frames analysées")
+                key_points.append("Manipulation detected in the majority of analyzed frames.")
             else:
-                key_points.append("Signes de manipulation détectés sur certaines portions de la vidéo")
+                key_points.append("Signs of manipulation detected in certain portions of the video.")
             
             if temporal_analysis['has_suspicious_segments']:
-                key_points.append(f"Segments suspects identifiés: {temporal_analysis['suspicious_segments_count']}")
+                key_points.append(f"Suspicious segments identified: {temporal_analysis['suspicious_segments_count']}")
         else:
             if real_count / total > 0.9:
-                key_points.append("Aucun signe de manipulation détecté")
+                key_points.append("No signs of manipulation detected.")
             else:
-                key_points.append("La vidéo semble authentique malgré quelques frames ambiguës")
+                key_points.append("The video appears authentic despite a few ambiguous frames.")
         
         # Confidence level
         if confidence >= 0.9:
-            confidence_level = "Très haute confiance"
+            confidence_level = "Very high confidence"
             confidence_color = "#10B981"
         elif confidence >= 0.75:
-            confidence_level = "Haute confiance"
+            confidence_level = "High confidence"
             confidence_color = "#34D399"
         elif confidence >= 0.6:
-            confidence_level = "Confiance modérée"
+            confidence_level = "Moderate confidence"
             confidence_color = "#F59E0B"
         else:
-            confidence_level = "Faible confiance"
+            confidence_level = "Low confidence"
             confidence_color = "#EF4444"
         
         return {
-            'summary': f"{'Deepfake détecté' if is_deepfake else 'Vidéo authentique'} avec {confidence*100:.1f}% de confiance",
+            'summary': f"{'Deepfake detected' if is_deepfake else 'Authentic video'} with {confidence*100:.1f}% confidence",
             'key_points': key_points,
             'confidence_level': confidence_level,
             'confidence_color': confidence_color,
@@ -470,18 +470,18 @@ class EnhancedVideoAnalyzer:
         
         if is_deepfake:
             if confidence >= 0.85 and fake_count / total > 0.7:
-                return "Cette vidéo présente de forts indicateurs de manipulation. Nous recommandons fortement de ne pas la considérer comme authentique."
+                return "This video shows strong indicators of manipulation. We strongly recommend not considering it authentic."
             elif confidence >= 0.7:
-                return "Des signes significatifs de manipulation ont été détectés. Une vérification manuelle approfondie est conseillée."
+                return "Significant signs of manipulation have been detected. A thorough manual review is recommended."
             else:
-                return "Des anomalies ont été détectées mais le résultat est incertain. Une analyse par un expert est recommandée."
+                return "Anomalies have been detected, but the result is uncertain. An expert review is recommended."
         else:
             if confidence >= 0.85:
-                return "Cette vidéo semble authentique. Aucun signe de manipulation détecté."
+                return "This video appears authentic. No signs of manipulation detected."
             elif confidence >= 0.7:
-                return "La vidéo semble probablement authentique, mais quelques frames présentent des ambiguïtés mineures."
+                return "The video appears likely authentic, but a few frames show minor ambiguities."
             else:
-                return "Le modèle penche vers l'authenticité mais avec une confiance limitée. Une analyse supplémentaire peut être utile."
+                return "The model leans toward authenticity but with limited confidence. Further analysis may be helpful."
 
 
 def create_enhanced_video_analyzer(predictor, device='cpu') -> EnhancedVideoAnalyzer:

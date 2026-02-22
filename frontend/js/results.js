@@ -143,7 +143,7 @@ class ResultsDisplay {
                 <div class="probability-section">
                     <div class="prob-item">
                         <div class="prob-header">
-                            <span class="prob-label">✅ Real</span>
+                            <span class="prob-label">Real</span>
                             <span class="prob-value">${(result.probabilities.real * 100).toFixed(1)}%</span>
                         </div>
                         <div class="prob-bar">
@@ -152,7 +152,7 @@ class ResultsDisplay {
                     </div>
                     <div class="prob-item">
                         <div class="prob-header">
-                            <span class="prob-label">⚠️ Fake</span>
+                            <span class="prob-label">Fake</span>
                             <span class="prob-value">${(result.probabilities.fake * 100).toFixed(1)}%</span>
                         </div>
                         <div class="prob-bar">

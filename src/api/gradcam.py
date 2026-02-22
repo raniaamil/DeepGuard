@@ -238,28 +238,28 @@ class ExplainabilityAnalyzer:
         """Interprète le score de confiance"""
         if confidence >= 0.95:
             level = 'very_high'
-            label = 'Très haute confiance'
-            description = 'Le modèle est très certain de sa prédiction'
+            label = 'Very high confidence.'
+            description = 'The model is very confident in its prediction.'
             color = '#10B981'  # Vert
         elif confidence >= 0.85:
             level = 'high'
-            label = 'Haute confiance'
-            description = 'Le modèle est confiant dans sa prédiction'
+            label = 'High confidence'
+            description = 'The model is confident in its prediction.'
             color = '#34D399'  # Vert clair
         elif confidence >= 0.70:
             level = 'moderate'
-            label = 'Confiance modérée'
-            description = 'Le modèle penche vers cette prédiction mais avec une certaine incertitude'
+            label = 'Moderate confidence'
+            description = 'The model leans toward this prediction but with some uncertainty.'
             color = '#F59E0B'  # Orange
         elif confidence >= 0.55:
             level = 'low'
-            label = 'Faible confiance'
-            description = 'Le modèle est incertain, résultat à prendre avec précaution'
+            label = 'Low confidence.'
+            description = 'The model is uncertain; the result should be interpreted with caution.'
             color = '#EF4444'  # Rouge
         else:
             level = 'uncertain'
-            label = 'Très incertain'
-            description = 'Le modèle ne peut pas se prononcer de manière fiable'
+            label = 'Very uncertain.'
+            description = 'The model cannot make a reliable determination.'
             color = '#6B7280'  # Gris
         
         return {
@@ -324,34 +324,34 @@ class ExplainabilityAnalyzer:
         if is_fake:
             if heatmap_analysis['high_attention_ratio'] > 0.3:
                 key_points.append(
-                    "Zones étendues d'anomalies détectées sur le visage"
+                    "Extensive anomaly regions detected on the face."
                 )
             if len(suspicious_regions) > 2:
                 key_points.append(
-                    f"{len(suspicious_regions)} régions suspectes identifiées"
+                    f"{len(suspicious_regions)} Suspicious regions identified."
                 )
             if heatmap_analysis['max_activation'] > 0.9:
                 key_points.append(
-                    "Forte concentration d'artefacts dans certaines zones"
+                    "High concentration of artifacts in certain areas."
                 )
             
             if not key_points:
                 key_points.append(
-                    "Patterns subtils de manipulation détectés"
+                    "Subtle manipulation patterns detected."
                 )
         else:
             if heatmap_analysis['mean_activation'] < 0.3:
                 key_points.append(
-                    "Aucune anomalie significative détectée"
+                    "No significant anomalies detected."
                 )
             if heatmap_analysis['std_activation'] < 0.2:
                 key_points.append(
-                    "Texture faciale cohérente et naturelle"
+                    "Consistent and natural facial texture."
                 )
             
             if not key_points:
                 key_points.append(
-                    "Image présente des caractéristiques authentiques"
+                    "The image exhibits authentic characteristics."
                 )
         
         # Analyse détaillée
@@ -359,21 +359,21 @@ class ExplainabilityAnalyzer:
         
         if is_fake:
             technical_details = [
-                "Analyse des artefacts de compression GAN",
-                "Détection d'incohérences aux frontières du visage",
-                "Vérification de la cohérence des textures cutanées",
-                "Analyse des micro-expressions et symétrie faciale"
+                "GAN compression artifact analysis.",
+                "Detection of inconsistencies at the face boundaries.",
+                "Verification of skin texture consistency.",
+                "Analysis of micro-expressions and facial symmetry."
             ]
         else:
             technical_details = [
-                "Vérification de la cohérence des textures",
-                "Analyse de l'éclairage et des ombres",
-                "Contrôle de la résolution et netteté",
-                "Validation des proportions faciales"
+                "Verification of texture consistency.",
+                "Lighting and shadow analysis.",
+                "Resolution and sharpness check.",
+                "Validation of facial proportions."
             ]
         
         return {
-            'summary': f"{'Deepfake détecté' if is_fake else 'Image authentique'} avec {confidence*100:.1f}% de confiance",
+            'summary': f"{'Deepfake detected' if is_fake else 'Authentic image'} with {confidence*100:.1f}% confidence",
             'key_points': key_points,
             'technical_details': technical_details,
             'recommendation': self._get_recommendation(is_fake, confidence)
@@ -384,18 +384,18 @@ class ExplainabilityAnalyzer:
         
         if is_fake:
             if confidence >= 0.9:
-                return "Cette image présente de forts indicateurs de manipulation. Nous recommandons de ne pas la considérer comme authentique."
+                return "This image shows strong indicators of manipulation. We recommend not considering it authentic."
             elif confidence >= 0.7:
-                return "Cette image présente des signes de manipulation. Une vérification supplémentaire est conseillée."
+                return "This image shows signs of manipulation. Further verification is recommended."
             else:
-                return "Des anomalies ont été détectées mais le résultat est incertain. Une analyse manuelle est recommandée."
+                return "Anomalies have been detected, but the result is uncertain. Manual analysis is recommended."
         else:
             if confidence >= 0.9:
-                return "Cette image semble authentique. Aucun signe de manipulation détecté."
+                return "This image appears authentic. No signs of manipulation detected."
             elif confidence >= 0.7:
-                return "Cette image semble probablement authentique, mais une vérification supplémentaire peut être utile."
+                return "This image appears likely authentic, but additional verification may be helpful."
             else:
-                return "Le modèle penche vers l'authenticité mais avec une faible confiance. Une analyse supplémentaire est recommandée."
+                return "The model leans toward authenticity but with low confidence. Further analysis is recommended."
 
 
 def create_explainability_analyzer(model, device='cpu') -> ExplainabilityAnalyzer:

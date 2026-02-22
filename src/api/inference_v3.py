@@ -287,20 +287,20 @@ class DeepfakeDetectorV3Enhanced:
     def _interpret_confidence(self, target_class: int, confidence: float) -> dict:
         """Interprète le niveau de confiance"""
         if confidence >= 0.95:
-            level, label, color = 'very_high', 'Très haute confiance', '#10B981'
-            desc = 'Le modèle est très certain de sa prédiction'
+            level, label, color = 'very_high', 'Very high confidence.', '#10B981'
+            desc = 'The model is very confident in its prediction.'
         elif confidence >= 0.85:
-            level, label, color = 'high', 'Haute confiance', '#34D399'
-            desc = 'Le modèle est confiant dans sa prédiction'
+            level, label, color = 'high', 'High confidence', '#34D399'
+            desc = 'The model is confident in its prediction.'
         elif confidence >= 0.70:
-            level, label, color = 'moderate', 'Confiance modérée', '#F59E0B'
-            desc = 'Prédiction avec une certaine incertitude'
+            level, label, color = 'moderate', 'Moderate confidence', '#F59E0B'
+            desc = 'Prediction with some uncertainty.'
         elif confidence >= 0.55:
-            level, label, color = 'low', 'Faible confiance', '#EF4444'
-            desc = 'Résultat à prendre avec précaution'
+            level, label, color = 'low', 'Low confidence', '#EF4444'
+            desc = 'Result should be interpreted with caution.'
         else:
-            level, label, color = 'uncertain', 'Très incertain', '#6B7280'
-            desc = 'Le modèle ne peut pas se prononcer de manière fiable'
+            level, label, color = 'uncertain', 'Very uncertain.', '#6B7280'
+            desc = 'The model cannot make a reliable determination.'
         
         return {
             'level': level,
@@ -316,35 +316,35 @@ class DeepfakeDetectorV3Enhanced:
         
         if is_fake:
             if stats['high_attention_ratio'] > 0.3:
-                key_points.append("Zones étendues d'anomalies détectées")
+                key_points.append("Extensive anomaly regions detected.")
             if len(regions) > 2:
-                key_points.append(f"{len(regions)} régions suspectes identifiées")
+                key_points.append(f"{len(regions)} Suspicious regions identified.")
             if stats['max_activation'] > 0.9:
-                key_points.append("Forte concentration d'artefacts")
+                key_points.append("High concentration of artifacts.")
             if not key_points:
-                key_points.append("Patterns subtils de manipulation détectés")
+                key_points.append("Subtle manipulation patterns detected.")
                 
             technical = [
-                "Analyse des artefacts de compression GAN",
-                "Détection d'incohérences aux frontières du visage",
-                "Vérification de la cohérence des textures cutanées"
+                "GAN compression artifact analysis.",
+                "Detection of inconsistencies at the face boundaries.",
+                "Verification of skin texture consistency."
             ]
         else:
             if stats['mean_activation'] < 0.3:
-                key_points.append("Aucune anomalie significative détectée")
+                key_points.append("No significant anomalies detected.")
             if stats['std_activation'] < 0.2:
-                key_points.append("Texture faciale cohérente et naturelle")
+                key_points.append("Consistent and natural facial texture.")
             if not key_points:
-                key_points.append("Image présente des caractéristiques authentiques")
+                key_points.append("The image exhibits authentic characteristics.")
                 
             technical = [
-                "Vérification de la cohérence des textures",
-                "Analyse de l'éclairage et des ombres",
-                "Validation des proportions faciales"
+                "Verification of texture consistency.",
+                "Lighting and shadow analysis.",
+                "Validation of facial proportions."
             ]
         
         return {
-            'summary': f"{'Deepfake détecté' if is_fake else 'Image authentique'}",
+            'summary': f"{'Deepfake detected' if is_fake else 'Authentic image'}",
             'key_points': key_points,
             'technical_details': technical
         }
