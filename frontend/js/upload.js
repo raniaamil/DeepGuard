@@ -12,6 +12,10 @@ class UploadHandler {
         this.init();
     }
 
+    t(key) {
+        return window.i18n ? window.i18n.t(key) : key;
+    }
+
     init() {
         this.setupImageUpload();
         this.setupVideoUpload();
@@ -261,14 +265,14 @@ class UploadHandler {
 
         try {
             if (!window.DeepGuardUtils.validateImageUrl(url)) {
-                throw new Error('Invalid URL format.');
+                throw new Error(this.t('error_invalid_url'));
             }
 
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = 'Loading image...';
+            if (loadingText) loadingText.textContent = this.t('loading_url');
 
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to load image from URL.');
+            if (!response.ok) throw new Error(this.t('error_load_image'));
 
             const blob = await response.blob();
             const filename = window.DeepGuardUtils.getFilenameFromUrl(url) || 'image.jpg';
@@ -280,7 +284,7 @@ class UploadHandler {
             if (imageUrlInput) imageUrlInput.value = '';
 
         } catch (err) {
-            this.showError(err.message || 'Error loading image from URL.');
+            this.showError(err.message || this.t('error_load_image'));
         } finally {
             if (loadingOverlay) loadingOverlay.style.display = 'none';
         }
@@ -292,11 +296,11 @@ class UploadHandler {
 
         try {
             if (!window.DeepGuardUtils.validateVideoUrl(url)) {
-                throw new Error('Invalid URL format.');
+                throw new Error(this.t('error_invalid_url'));
             }
 
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = 'Loading video...';
+            if (loadingText) loadingText.textContent = this.t('loading_url');
 
             this.currentVideoFile = null;
             this.currentVideoUrl = url;
@@ -325,7 +329,7 @@ class UploadHandler {
             if (videoUrlInput) videoUrlInput.value = '';
 
         } catch (err) {
-            this.showError(err.message || 'Error loading video from URL.');
+            this.showError(err.message || this.t('error_load_video'));
         } finally {
             if (loadingOverlay) loadingOverlay.style.display = 'none';
         }
@@ -353,7 +357,7 @@ class UploadHandler {
 
     async analyzeCurrentImage() {
         if (!this.currentImageFile) {
-            this.showError('No image selected.');
+            this.showError(this.t('error_no_image'));
             return;
         }
 
@@ -364,8 +368,8 @@ class UploadHandler {
 
         try {
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = 'Analyzing image...';
-            if (loadingSubtext) loadingSubtext.textContent = 'Generating Grad-CAM heatmap and predictions';
+            if (loadingText) loadingText.textContent = this.t('loading_analyzing');
+            if (loadingSubtext) loadingSubtext.textContent = this.t('loading_image');
             if (analyzeBtn) analyzeBtn.disabled = true;
 
             const result = await window.deepGuardAPI.analyzeImage(this.currentImageFile, true);
@@ -374,7 +378,7 @@ class UploadHandler {
             window.resultsDisplay.displayImageResults(result);
 
         } catch (err) {
-            this.showError(err.message || 'Image analysis error.');
+            this.showError(err.message || this.t('error_analysis_image'));
         } finally {
             if (loadingOverlay) loadingOverlay.style.display = 'none';
             if (analyzeBtn) analyzeBtn.disabled = false;
@@ -383,7 +387,7 @@ class UploadHandler {
 
     async analyzeCurrentVideo() {
         if (!this.currentVideoFile && !this.currentVideoUrl) {
-            this.showError('No video selected.');
+            this.showError(this.t('error_no_video'));
             return;
         }
 
@@ -394,8 +398,8 @@ class UploadHandler {
 
         try {
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = 'Analyzing video...';
-            if (loadingSubtext) loadingSubtext.textContent = 'Extracting frames and detecting faces';
+            if (loadingText) loadingText.textContent = this.t('loading_analyzing');
+            if (loadingSubtext) loadingSubtext.textContent = this.t('loading_video');
             if (analyzeBtn) analyzeBtn.disabled = true;
 
             let result;
@@ -408,11 +412,11 @@ class UploadHandler {
             if (result && result.success !== false) {
                 window.resultsDisplay.displayVideoResults(result);
             } else {
-                throw new Error(result?.error || 'Video analysis failed.');
+                throw new Error(result?.error || this.t('error_analysis_video'));
             }
 
         } catch (err) {
-            this.showError(err.message || 'Video analysis error.');
+            this.showError(err.message || this.t('error_analysis_video'));
         } finally {
             if (loadingOverlay) loadingOverlay.style.display = 'none';
             if (analyzeBtn) analyzeBtn.disabled = false;
@@ -441,8 +445,16 @@ class UploadHandler {
         card.className = 'result-card';
         card.innerHTML = `
             <div class="result-placeholder">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
-                <p>Click "Analyze" to start detection</p>
+                <div class="placeholder-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="10" x="3" y="11" rx="2"/>
+                        <circle cx="12" cy="5" r="2"/>
+                        <path d="M12 7v4"/>
+                        <circle cx="8" cy="16" r="1" fill="currentColor"/>
+                        <circle cx="16" cy="16" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
+                <p>${this.t('result_placeholder')}</p>
             </div>
         `;
     }

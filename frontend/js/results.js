@@ -161,8 +161,8 @@ class ResultsDisplay {
                             <div class="region-item">
                                 <div class="region-number">${region.id}</div>
                                 <div class="region-info">
-                                    <div class="region-coords">Position: ${region.x_percent.toFixed(0)}%, ${region.y_percent.toFixed(0)}%</div>
-                                    <div class="region-intensity">Intensity: ${(region.intensity * 100).toFixed(0)}%</div>
+                                    <div class="region-coords">${this.t('explain_position')}: ${region.x_percent.toFixed(0)}%, ${region.y_percent.toFixed(0)}%</div>
+                                    <div class="region-intensity">${this.t('explain_intensity')}: ${(region.intensity * 100).toFixed(0)}%</div>
                                 </div>
                             </div>
                         `).join('')}
@@ -316,13 +316,13 @@ class ResultsDisplay {
 
     getRecommendation(isReal, confidence) {
         if (isReal) {
-            if (confidence >= 0.9) return "This media appears to be authentic. No signs of AI manipulation were detected.";
-            else if (confidence >= 0.7) return "This media appears likely authentic, though some minor ambiguities were detected.";
-            else return "The model leans toward authenticity but with limited confidence. Manual review recommended.";
+            if (confidence >= 0.9) return this.t('rec_real_high');
+            else if (confidence >= 0.7) return this.t('rec_real_medium');
+            else return this.t('rec_real_low');
         } else {
-            if (confidence >= 0.9) return "Strong indicators of deepfake manipulation detected. We strongly recommend NOT treating this media as authentic.";
-            else if (confidence >= 0.7) return "Significant signs of manipulation were detected. Additional verification is advised.";
-            else return "Some anomalies were detected but the result is uncertain. Professional analysis may be needed.";
+            if (confidence >= 0.9) return this.t('rec_fake_high');
+            else if (confidence >= 0.7) return this.t('rec_fake_medium');
+            else return this.t('rec_fake_low');
         }
     }
 

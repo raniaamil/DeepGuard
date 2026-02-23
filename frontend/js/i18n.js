@@ -23,6 +23,10 @@ const translations = {
         hero_stat_inference: "Inference Time",
         hero_btn_try: "Try DeepGuard",
         hero_btn_learn: "Learn More",
+        hero_badge_authentic: "AUTHENTIC",
+        hero_badge_manipulated: "MANIPULATED",
+        hero_bar_authenticity: "Authenticity",
+        hero_bar_manipulation: "Manipulation",
 
         // Features Section
         features_title: "Cutting-Edge Technology",
@@ -119,6 +123,8 @@ const translations = {
         explain_high_attention: "High attention",
         explain_prob_real: "Real",
         explain_prob_fake: "Fake",
+        explain_position: "Position",
+        explain_intensity: "Intensity",
 
         // Video Timeline
         timeline_title: "Frame-by-Frame Analysis",
@@ -173,7 +179,26 @@ const translations = {
         video_info: "Video Information",
         video_duration: "Duration",
         video_fps: "FPS",
-        video_resolution: "Resolution"
+        video_resolution: "Resolution",
+
+        // Error messages
+        error_no_image: "No image selected.",
+        error_no_video: "No video selected.",
+        error_invalid_url: "Invalid URL format.",
+        error_load_image: "Error loading image from URL.",
+        error_load_video: "Error loading video from URL.",
+        error_analysis_image: "Image analysis error.",
+        error_analysis_video: "Video analysis error.",
+
+        // Recommendations - Real
+        rec_real_high: "This media appears to be authentic. No signs of AI manipulation were detected.",
+        rec_real_medium: "This media appears likely authentic, though some minor ambiguities were detected.",
+        rec_real_low: "The model leans toward authenticity but with limited confidence. Manual review recommended.",
+        
+        // Recommendations - Fake
+        rec_fake_high: "Strong indicators of deepfake manipulation detected. We strongly recommend NOT treating this media as authentic.",
+        rec_fake_medium: "Significant signs of manipulation were detected. Additional verification is advised.",
+        rec_fake_low: "Some anomalies were detected but the result is uncertain. Professional analysis may be needed."
     },
 
     fr: {
@@ -195,6 +220,10 @@ const translations = {
         hero_stat_inference: "Temps d'inférence",
         hero_btn_try: "Essayer DeepGuard",
         hero_btn_learn: "En savoir plus",
+        hero_badge_authentic: "AUTHENTIQUE",
+        hero_badge_manipulated: "MANIPULÉ",
+        hero_bar_authenticity: "Authenticité",
+        hero_bar_manipulation: "Manipulation",
 
         // Features Section
         features_title: "Technologie de Pointe",
@@ -291,6 +320,8 @@ const translations = {
         explain_high_attention: "Forte attention",
         explain_prob_real: "Authentique",
         explain_prob_fake: "Faux",
+        explain_position: "Position",
+        explain_intensity: "Intensité",
 
         // Video Timeline
         timeline_title: "Analyse Image par Image",
@@ -345,7 +376,26 @@ const translations = {
         video_info: "Informations Vidéo",
         video_duration: "Durée",
         video_fps: "IPS",
-        video_resolution: "Résolution"
+        video_resolution: "Résolution",
+
+        // Error messages
+        error_no_image: "Aucune image sélectionnée.",
+        error_no_video: "Aucune vidéo sélectionnée.",
+        error_invalid_url: "Format d'URL invalide.",
+        error_load_image: "Erreur lors du chargement de l'image depuis l'URL.",
+        error_load_video: "Erreur lors du chargement de la vidéo depuis l'URL.",
+        error_analysis_image: "Erreur d'analyse de l'image.",
+        error_analysis_video: "Erreur d'analyse de la vidéo.",
+
+        // Recommendations - Real
+        rec_real_high: "Ce média semble être authentique. Aucun signe de manipulation IA détecté.",
+        rec_real_medium: "Ce média semble probablement authentique, bien que quelques ambiguïtés mineures aient été détectées.",
+        rec_real_low: "Le modèle penche vers l'authenticité mais avec une confiance limitée. Une vérification manuelle est recommandée.",
+        
+        // Recommendations - Fake
+        rec_fake_high: "De forts indicateurs de manipulation deepfake détectés. Nous recommandons fortement de NE PAS considérer ce média comme authentique.",
+        rec_fake_medium: "Des signes significatifs de manipulation ont été détectés. Une vérification supplémentaire est conseillée.",
+        rec_fake_low: "Certaines anomalies ont été détectées mais le résultat est incertain. Une analyse professionnelle peut être nécessaire."
     },
 
     es: {
@@ -367,6 +417,10 @@ const translations = {
         hero_stat_inference: "Tiempo de inferencia",
         hero_btn_try: "Probar DeepGuard",
         hero_btn_learn: "Saber más",
+        hero_badge_authentic: "AUTÉNTICO",
+        hero_badge_manipulated: "MANIPULADO",
+        hero_bar_authenticity: "Autenticidad",
+        hero_bar_manipulation: "Manipulación",
 
         // Features Section
         features_title: "Tecnología de Vanguardia",
@@ -463,6 +517,8 @@ const translations = {
         explain_high_attention: "Alta atención",
         explain_prob_real: "Auténtico",
         explain_prob_fake: "Falso",
+        explain_position: "Posición",
+        explain_intensity: "Intensidad",
 
         // Video Timeline
         timeline_title: "Análisis Cuadro por Cuadro",
@@ -517,7 +573,26 @@ const translations = {
         video_info: "Información del Video",
         video_duration: "Duración",
         video_fps: "FPS",
-        video_resolution: "Resolución"
+        video_resolution: "Resolución",
+
+        // Error messages
+        error_no_image: "Ninguna imagen seleccionada.",
+        error_no_video: "Ningún video seleccionado.",
+        error_invalid_url: "Formato de URL inválido.",
+        error_load_image: "Error al cargar la imagen desde la URL.",
+        error_load_video: "Error al cargar el video desde la URL.",
+        error_analysis_image: "Error de análisis de imagen.",
+        error_analysis_video: "Error de análisis de video.",
+
+        // Recommendations - Real
+        rec_real_high: "Este medio parece ser auténtico. No se detectaron signos de manipulación IA.",
+        rec_real_medium: "Este medio parece probablemente auténtico, aunque se detectaron algunas ambigüedades menores.",
+        rec_real_low: "El modelo se inclina hacia la autenticidad pero con confianza limitada. Se recomienda revisión manual.",
+        
+        // Recommendations - Fake
+        rec_fake_high: "Se detectaron fuertes indicadores de manipulación deepfake. Recomendamos encarecidamente NO considerar este medio como auténtico.",
+        rec_fake_medium: "Se detectaron signos significativos de manipulación. Se aconseja verificación adicional.",
+        rec_fake_low: "Se detectaron algunas anomalías pero el resultado es incierto. Puede ser necesario un análisis profesional."
     }
 };
 
@@ -558,6 +633,7 @@ class I18nManager {
     }
 
     updatePage() {
+        // Update all elements with data-i18n attribute
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const translation = this.t(key);
@@ -569,10 +645,13 @@ class I18nManager {
                 el.textContent = translation;
             }
         });
+        
+        // Update all elements with data-i18n-placeholder attribute
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
             el.placeholder = this.t(key);
         });
+        
         this.updatePageTitle();
     }
 
