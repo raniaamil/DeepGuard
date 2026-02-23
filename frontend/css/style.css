@@ -440,7 +440,6 @@ body::before {
 }
 
 .url-divider span {
-    background: var(--bg-primary);
     padding: 0 1rem;
     color: var(--text-secondary);
     font-size: 0.9rem;

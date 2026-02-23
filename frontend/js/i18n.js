@@ -1,5 +1,5 @@
 /**
- * DeepGuard - Internationalization (i18n)
+ * DeepGuard - Internationalization (i18n) - COMPLETE VERSION
  * Supported languages: EN, FR, ES
  */
 
@@ -74,7 +74,7 @@ const translations = {
         contact_submit: "Send Message",
 
         // Footer
-        footer_copyright: "© 2026 DeepGuard. Created by Rania AMIL.",
+        footer_copyright: "© 2025 DeepGuard. Created by Rania AMIL.",
 
         // App Page
         app_title: "AI Deepfake Detection",
@@ -104,7 +104,7 @@ const translations = {
         result_placeholder: "Click \"Analyze\" to start detection",
         result_real: "REAL",
         result_fake: "FAKE",
-        result_real_desc: "This image/video appears to be authentic.",
+        result_real_desc: "This image appears to be authentic.",
         result_fake_desc: "Deepfake manipulation detected.",
 
         // Explainability
@@ -117,6 +117,8 @@ const translations = {
         explain_recommendation: "Recommendation",
         explain_low_attention: "Low attention",
         explain_high_attention: "High attention",
+        explain_prob_real: "Real",
+        explain_prob_fake: "Fake",
 
         // Video Timeline
         timeline_title: "Frame-by-Frame Analysis",
@@ -143,8 +145,6 @@ const translations = {
         how_multi_desc: "Trained to detect Deepfakes, Face2Face, FaceSwap, NeuralTextures, and Celeb-DF manipulation methods.",
         how_confidence_title: "Confidence Scoring",
         how_confidence_desc: "Get detailed probability distributions and confidence levels to understand the reliability of each prediction.",
-
-        // Video How It Works
         how_video_title: "Video Analysis Process",
         how_frame_title: "Frame Extraction",
         how_frame_desc: "Up to 30 frames are sampled from the video to ensure comprehensive coverage while maintaining speed.",
@@ -156,7 +156,7 @@ const translations = {
         how_suspicious_desc: "The most suspicious frames are highlighted for closer inspection.",
 
         // Limitations
-        limitations_title: "⚠️ Limitations",
+        limitations_title: "Limitations",
         limitation_1: "Works best on frontal faces",
         limitation_2: "May be less accurate on heavily compressed images",
         limitation_3: "Optimized for face manipulation detection",
@@ -167,7 +167,13 @@ const translations = {
         loading_wait: "This may take a few moments",
         loading_image: "Generating Grad-CAM heatmap and predictions",
         loading_video: "Extracting frames and detecting faces",
-        loading_url: "Loading from URL..."
+        loading_url: "Loading from URL...",
+
+        // Video Info
+        video_info: "Video Information",
+        video_duration: "Duration",
+        video_fps: "FPS",
+        video_resolution: "Resolution"
     },
 
     fr: {
@@ -240,7 +246,7 @@ const translations = {
         contact_submit: "Envoyer le message",
 
         // Footer
-        footer_copyright: "© 2026 DeepGuard. Créé par Rania AMIL.",
+        footer_copyright: "© 2025 DeepGuard. Créé par Rania AMIL.",
 
         // App Page
         app_title: "Détection de Deepfakes par IA",
@@ -270,19 +276,21 @@ const translations = {
         result_placeholder: "Cliquez sur \"Analyser\" pour lancer la détection",
         result_real: "AUTHENTIQUE",
         result_fake: "FAUX",
-        result_real_desc: "Cette image/vidéo semble être authentique.",
+        result_real_desc: "Cette image semble être authentique.",
         result_fake_desc: "Manipulation deepfake détectée.",
 
         // Explainability
-        explain_confidence: "Niveau de confiance",
-        explain_probability: "Distribution des probabilités",
-        explain_heatmap: "Carte de chaleur (Grad-CAM)",
-        explain_regions: "Régions suspectes",
-        explain_findings: "Points clés",
-        explain_technical: "Analyse technique",
+        explain_confidence: "Niveau de Confiance",
+        explain_probability: "Distribution des Probabilités",
+        explain_heatmap: "Carte de Chaleur (Grad-CAM)",
+        explain_regions: "Régions Suspectes",
+        explain_findings: "Points Clés",
+        explain_technical: "Analyse Technique",
         explain_recommendation: "Recommandation",
         explain_low_attention: "Faible attention",
         explain_high_attention: "Forte attention",
+        explain_prob_real: "Authentique",
+        explain_prob_fake: "Faux",
 
         // Video Timeline
         timeline_title: "Analyse Image par Image",
@@ -293,7 +301,7 @@ const translations = {
         timeline_faces: "Visages détectés",
         timeline_fake_pct: "Images fausses",
         timeline_time: "Temps de traitement",
-        suspicious_title: "Images les plus suspectes",
+        suspicious_title: "Images les Plus Suspectes",
 
         // Model Metrics
         model_title: "Performance du Modèle",
@@ -309,8 +317,6 @@ const translations = {
         how_multi_desc: "Entraîné pour détecter Deepfakes, Face2Face, FaceSwap, NeuralTextures et les méthodes de manipulation Celeb-DF.",
         how_confidence_title: "Score de Confiance",
         how_confidence_desc: "Obtenez des distributions de probabilités détaillées et des niveaux de confiance pour comprendre la fiabilité de chaque prédiction.",
-
-        // Video How It Works
         how_video_title: "Processus d'Analyse Vidéo",
         how_frame_title: "Extraction d'Images",
         how_frame_desc: "Jusqu'à 30 images sont échantillonnées de la vidéo pour assurer une couverture complète tout en maintenant la vitesse.",
@@ -322,7 +328,7 @@ const translations = {
         how_suspicious_desc: "Les images les plus suspectes sont mises en évidence pour une inspection approfondie.",
 
         // Limitations
-        limitations_title: "⚠️ Limitations",
+        limitations_title: "Limitations",
         limitation_1: "Fonctionne mieux sur les visages de face",
         limitation_2: "Peut être moins précis sur les images fortement compressées",
         limitation_3: "Optimisé pour la détection de manipulation faciale",
@@ -333,7 +339,13 @@ const translations = {
         loading_wait: "Cela peut prendre quelques instants",
         loading_image: "Génération de la heatmap Grad-CAM et des prédictions",
         loading_video: "Extraction des images et détection des visages",
-        loading_url: "Chargement depuis l'URL..."
+        loading_url: "Chargement depuis l'URL...",
+
+        // Video Info
+        video_info: "Informations Vidéo",
+        video_duration: "Durée",
+        video_fps: "IPS",
+        video_resolution: "Résolution"
     },
 
     es: {
@@ -406,7 +418,7 @@ const translations = {
         contact_submit: "Enviar mensaje",
 
         // Footer
-        footer_copyright: "© 2026 DeepGuard. Creado por Rania AMIL.",
+        footer_copyright: "© 2025 DeepGuard. Creado por Rania AMIL.",
 
         // App Page
         app_title: "Detección de Deepfakes con IA",
@@ -436,22 +448,24 @@ const translations = {
         result_placeholder: "Haz clic en \"Analizar\" para iniciar la detección",
         result_real: "AUTÉNTICO",
         result_fake: "FALSO",
-        result_real_desc: "Esta imagen/video parece ser auténtica.",
+        result_real_desc: "Esta imagen parece ser auténtica.",
         result_fake_desc: "Manipulación deepfake detectada.",
 
         // Explainability
-        explain_confidence: "Nivel de confianza",
-        explain_probability: "Distribución de probabilidades",
-        explain_heatmap: "Mapa de calor (Grad-CAM)",
-        explain_regions: "Regiones sospechosas",
-        explain_findings: "Hallazgos clave",
-        explain_technical: "Análisis técnico",
+        explain_confidence: "Nivel de Confianza",
+        explain_probability: "Distribución de Probabilidades",
+        explain_heatmap: "Mapa de Calor (Grad-CAM)",
+        explain_regions: "Regiones Sospechosas",
+        explain_findings: "Hallazgos Clave",
+        explain_technical: "Análisis Técnico",
         explain_recommendation: "Recomendación",
         explain_low_attention: "Baja atención",
         explain_high_attention: "Alta atención",
+        explain_prob_real: "Auténtico",
+        explain_prob_fake: "Falso",
 
         // Video Timeline
-        timeline_title: "Análisis cuadro por cuadro",
+        timeline_title: "Análisis Cuadro por Cuadro",
         timeline_real: "Auténtico",
         timeline_fake: "Falso",
         timeline_no_face: "Sin rostro",
@@ -459,7 +473,7 @@ const translations = {
         timeline_faces: "Rostros detectados",
         timeline_fake_pct: "Cuadros falsos",
         timeline_time: "Tiempo de procesamiento",
-        suspicious_title: "Cuadros más sospechosos",
+        suspicious_title: "Cuadros Más Sospechosos",
 
         // Model Metrics
         model_title: "Rendimiento del Modelo",
@@ -475,8 +489,6 @@ const translations = {
         how_multi_desc: "Entrenado para detectar Deepfakes, Face2Face, FaceSwap, NeuralTextures y métodos de manipulación Celeb-DF.",
         how_confidence_title: "Puntuación de Confianza",
         how_confidence_desc: "Obtén distribuciones de probabilidad detalladas y niveles de confianza para entender la fiabilidad de cada predicción.",
-
-        // Video How It Works
         how_video_title: "Proceso de Análisis de Video",
         how_frame_title: "Extracción de Cuadros",
         how_frame_desc: "Se muestrean hasta 30 cuadros del video para asegurar una cobertura completa manteniendo la velocidad.",
@@ -488,7 +500,7 @@ const translations = {
         how_suspicious_desc: "Los cuadros más sospechosos se resaltan para una inspección más detallada.",
 
         // Limitations
-        limitations_title: "⚠️ Limitaciones",
+        limitations_title: "Limitaciones",
         limitation_1: "Funciona mejor en rostros frontales",
         limitation_2: "Puede ser menos preciso en imágenes muy comprimidas",
         limitation_3: "Optimizado para detección de manipulación facial",
@@ -499,7 +511,13 @@ const translations = {
         loading_wait: "Esto puede tomar unos momentos",
         loading_image: "Generando mapa de calor Grad-CAM y predicciones",
         loading_video: "Extrayendo cuadros y detectando rostros",
-        loading_url: "Cargando desde URL..."
+        loading_url: "Cargando desde URL...",
+
+        // Video Info
+        video_info: "Información del Video",
+        video_duration: "Duración",
+        video_fps: "FPS",
+        video_resolution: "Resolución"
     }
 };
 
@@ -525,15 +543,10 @@ class I18nManager {
             console.warn(`Language ${lang} not supported`);
             return;
         }
-
         this.currentLang = lang;
-        
         try {
             localStorage.setItem('deepguard_lang', lang);
-        } catch {
-            // localStorage not available
-        }
-
+        } catch {}
         this.updatePage();
         this.updateLanguageButtons();
     }
@@ -545,29 +558,21 @@ class I18nManager {
     }
 
     updatePage() {
-        // Update all elements with data-i18n attribute
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const translation = this.t(key);
-            
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                if (el.placeholder) {
-                    el.placeholder = translation;
-                }
+                if (el.placeholder) el.placeholder = translation;
             } else if (el.tagName === 'OPTION') {
                 el.textContent = translation;
             } else {
                 el.textContent = translation;
             }
         });
-
-        // Update placeholders
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
             el.placeholder = this.t(key);
         });
-
-        // Update document title if on specific page
         this.updatePageTitle();
     }
 
@@ -591,10 +596,5 @@ class I18nManager {
     }
 }
 
-// Global instance
 window.i18n = new I18nManager();
-
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-    window.i18n.init();
-});
+document.addEventListener('DOMContentLoaded', () => window.i18n.init());

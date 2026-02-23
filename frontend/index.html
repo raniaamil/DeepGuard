@@ -94,48 +94,168 @@
             align-items: center;
         }
 
-        .demo-container {
+        /* NEW: Analysis Demo Animation */
+        .analysis-demo {
+            position: relative;
+            width: 320px;
+            height: 400px;
+        }
+
+        .scan-container {
+            background: var(--bg-card);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .face-outline {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+
+        .face-outline svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Scan line animation */
+        .scan-line {
+            animation: scanMove 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scanMove {
+            0%, 100% { transform: translateY(10px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            95% { transform: translateY(180px); opacity: 0; }
+        }
+
+        /* Detection points pulse */
+        .detect-point {
+            opacity: 0;
+            animation: pointPulse 2.5s ease-in-out infinite;
+        }
+
+        .detect-point.p1 { animation-delay: 0.3s; }
+        .detect-point.p2 { animation-delay: 0.4s; }
+        .detect-point.p3 { animation-delay: 0.6s; }
+        .detect-point.p4 { animation-delay: 0.8s; }
+
+        @keyframes pointPulse {
+            0%, 30% { opacity: 0; r: 2; }
+            40% { opacity: 1; r: 6; }
+            60% { opacity: 1; r: 4; }
+            100% { opacity: 0.5; r: 4; }
+        }
+
+        /* Analysis bars */
+        .analysis-bars {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
-        .demo-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            border-radius: 16px;
-            padding: 2rem 3rem;
-            text-align: center;
-            transition: all 0.3s ease;
+        .bar-item {
+            display: grid;
+            grid-template-columns: 90px 1fr 50px;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .demo-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--violet-primary);
+        .bar-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: right;
         }
 
-        .demo-card.real {
-            border-left: 4px solid var(--success);
+        .bar-track {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        .demo-card.fake {
-            border-left: 4px solid var(--error);
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            width: 0;
+            animation: barGrow 1.5s ease-out 0.5s forwards;
         }
 
-        .demo-result {
-            font-size: 1.5rem;
+        .bar-fill.real {
+            background: linear-gradient(90deg, var(--success), var(--success-light));
+        }
+
+        .bar-fill.fake {
+            background: linear-gradient(90deg, var(--error), var(--error-light));
+        }
+
+        @keyframes barGrow {
+            to { width: var(--target-width); }
+        }
+
+        .bar-value {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .bar-value.real-text {
+            color: var(--success);
+        }
+
+        /* Result badge */
+        .result-badge {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            animation: badgePop 0.5s ease-out 2s both;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        .demo-card.real .demo-result { color: var(--success); }
-        .demo-card.fake .demo-result { color: var(--error); }
+        .result-badge.authentic {
+            background: linear-gradient(135deg, var(--success), var(--success-light));
+            color: white;
+        }
 
-        .demo-confidence {
-            font-family: var(--font-heading);
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--violet-primary);
+        .result-badge.manipulated {
+            background: linear-gradient(135deg, var(--error), var(--error-light));
+            color: white;
+        }
+
+        .badge-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        @keyframes badgePop {
+            0% { transform: translateX(-50%) scale(0); opacity: 0; }
+            70% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
         }
 
         /* Language Switcher */
@@ -216,8 +336,20 @@
         }
 
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+            border-radius: 16px;
+            color: var(--violet-light);
+        }
+
+        .feature-icon svg {
+            width: 28px;
+            height: 28px;
         }
 
         .feature-card h3 {
@@ -542,7 +674,7 @@
                 <a href="#performance" class="nav-link" data-i18n="nav_performance">Performance</a>
                 <a href="#about" class="nav-link" data-i18n="nav_about">About</a>
                 <a href="#contact" class="nav-link" data-i18n="nav_contact">Contact</a>
-                <a href="app.html" class="nav-link nav-cta" data-i18n="nav_try_now">Try Now</a>
+                <a href="app.html" class="nav-link nav-cta" data-i18n="nav_try_now">Try Now →</a>
             </div>
             <!-- Language Switcher -->
             <div class="lang-switcher">
@@ -613,14 +745,67 @@
                 </div>
             </div>
             <div class="hero-visual">
-                <div class="demo-container">
-                    <div class="demo-card real">
-                        <div class="demo-result">✅ <span data-i18n="result_real">REAL</span></div>
-                        <div class="demo-confidence">96.8%</div>
+                <!-- Animated Analysis Demo -->
+                <div class="analysis-demo">
+                    <!-- Face scan animation -->
+                    <div class="scan-container">
+                        <div class="face-outline">
+                            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Face silhouette -->
+                                <ellipse cx="100" cy="90" rx="60" ry="75" stroke="url(#faceGradient)" stroke-width="2" fill="none" opacity="0.6"/>
+                                <!-- Eyes -->
+                                <ellipse cx="75" cy="80" rx="12" ry="8" stroke="var(--violet-light)" stroke-width="1.5" fill="none" opacity="0.5"/>
+                                <ellipse cx="125" cy="80" rx="12" ry="8" stroke="var(--violet-light)" stroke-width="1.5" fill="none" opacity="0.5"/>
+                                <!-- Nose -->
+                                <path d="M100 85 L100 110 L90 115" stroke="var(--violet-light)" stroke-width="1.5" fill="none" opacity="0.4"/>
+                                <!-- Mouth -->
+                                <path d="M80 130 Q100 145 120 130" stroke="var(--violet-light)" stroke-width="1.5" fill="none" opacity="0.4"/>
+                                <!-- Scan line -->
+                                <line class="scan-line" x1="30" y1="0" x2="170" y2="0" stroke="url(#scanGradient)" stroke-width="3"/>
+                                <!-- Detection points -->
+                                <circle class="detect-point p1" cx="75" cy="80" r="4" fill="var(--success)"/>
+                                <circle class="detect-point p2" cx="125" cy="80" r="4" fill="var(--success)"/>
+                                <circle class="detect-point p3" cx="100" cy="100" r="4" fill="var(--success)"/>
+                                <circle class="detect-point p4" cx="100" cy="130" r="4" fill="var(--warning)"/>
+                                <!-- Gradients -->
+                                <defs>
+                                    <linearGradient id="faceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--violet-primary)"/>
+                                        <stop offset="100%" stop-color="var(--pink-accent)"/>
+                                    </linearGradient>
+                                    <linearGradient id="scanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="transparent"/>
+                                        <stop offset="50%" stop-color="var(--violet-primary)"/>
+                                        <stop offset="100%" stop-color="transparent"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <!-- Analysis bars -->
+                        <div class="analysis-bars">
+                            <div class="bar-item">
+                                <div class="bar-label">Authenticity</div>
+                                <div class="bar-track">
+                                    <div class="bar-fill real" style="--target-width: 96.8%"></div>
+                                </div>
+                                <div class="bar-value real-text">96.8%</div>
+                            </div>
+                            <div class="bar-item">
+                                <div class="bar-label">Manipulation</div>
+                                <div class="bar-track">
+                                    <div class="bar-fill fake" style="--target-width: 3.2%"></div>
+                                </div>
+                                <div class="bar-value">3.2%</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="demo-card fake">
-                        <div class="demo-result">⚠️ <span data-i18n="result_fake">FAKE</span></div>
-                        <div class="demo-confidence">98.2%</div>
+                    <!-- Result badge -->
+                    <div class="result-badge authentic">
+                        <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                        <span class="badge-text" data-i18n="result_real">AUTHENTIC</span>
                     </div>
                 </div>
             </div>
@@ -632,32 +817,61 @@
         <h2 class="section-title" data-i18n="features_title">Cutting-Edge Technology</h2>
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">🧠</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0 1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 5.26.16V4.5"/>
+                        <path d="M12 4.5a2.5 2.5 0 0 1 4.96-.46 2.5 2.5 0 0 1 1.98 3 2.5 2.5 0 0 1-1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-5.26.16"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_convnext_title">ConvNeXt-Base</h3>
                 <p data-i18n="feature_convnext_desc">89M parameter state-of-the-art model trained on FaceForensics++ and Celeb-DF datasets</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🔥</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_gradcam_title">Grad-CAM Heatmaps</h3>
                 <p data-i18n="feature_gradcam_desc">Visual explainability showing exactly where the model detects anomalies</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📹</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m22 8-6 4 6 4V8Z"/>
+                        <rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_video_title">Video Timeline</h3>
                 <p data-i18n="feature_video_desc">Frame-by-frame analysis with interactive timeline visualization</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🎯</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="6"/>
+                        <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_region_title">Region Detection</h3>
                 <p data-i18n="feature_region_desc">Automatic identification and highlighting of suspicious facial regions</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📊</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"/>
+                        <path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_confidence_title">Confidence Scoring</h3>
                 <p data-i18n="feature_confidence_desc">Detailed probability distributions with interpretable confidence levels</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">⚡</div>
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
                 <h3 data-i18n="feature_realtime_title">Real-time Analysis</h3>
                 <p data-i18n="feature_realtime_desc">Sub-300ms inference time with optimized preprocessing pipeline</p>
             </div>
@@ -795,6 +1009,7 @@
     </footer>
 
     <!-- Scripts -->
+    <script src="js/icons.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/security.js"></script>
     <script src="js/main.js"></script>

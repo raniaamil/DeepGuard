@@ -64,6 +64,69 @@
                 padding-left: 0;
             }
         }
+
+        /* How It Works Icon Styles */
+        .how-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+            border-radius: 16px;
+            color: var(--violet-light);
+        }
+
+        .how-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .section-icon {
+            vertical-align: middle;
+            margin-right: 0.5rem;
+            color: var(--violet-light);
+        }
+
+        .limitation-icon {
+            vertical-align: middle;
+            margin-right: 0.25rem;
+            color: var(--warning);
+        }
+
+        .placeholder-icon {
+            color: var(--violet-light);
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        /* Result icon styling */
+        .result-icon {
+            display: inline-flex;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .result-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .result-card.real .result-icon {
+            color: var(--success);
+        }
+
+        .result-card.fake .result-icon {
+            color: var(--error);
+        }
+
+        /* Icon in explain cards */
+        .explain-card h4 svg,
+        .dg-icon {
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body class="app-body">
@@ -178,11 +241,22 @@
                         <h3 data-i18n="result_analysis">Analysis Result</h3>
                         <div class="result-card" id="imageResultCard">
                             <div class="result-placeholder">
-                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+                                <div class="placeholder-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="18" height="10" x="3" y="11" rx="2"/>
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <path d="M12 7v4"/>
+                                        <circle cx="8" cy="16" r="1" fill="currentColor"/>
+                                        <circle cx="16" cy="16" r="1" fill="currentColor"/>
+                                    </svg>
+                                </div>
                                 <p data-i18n="result_placeholder">Click "Analyze" to start detection</p>
                             </div>
                         </div>
                         <button class="btn-primary analyze-btn" id="analyzeImageBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+                            </svg>
                             <span data-i18n="result_analyze_image">ANALYZE IMAGE</span>
                         </button>
                     </div>
@@ -200,28 +274,48 @@
                 <h3><span data-i18n="how_title">How DeepGuard Works</span></h3>
                 <div class="how-it-works-grid">
                     <div class="how-card">
-                        <div class="how-icon">🧠</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0 1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 5.26.16V4.5"/>
+                                <path d="M12 4.5a2.5 2.5 0 0 1 4.96-.46 2.5 2.5 0 0 1 1.98 3 2.5 2.5 0 0 1-1.32 4.24 3 3 0 0 1-.34 5.58 2.5 2.5 0 0 1-5.26.16"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_convnext_title">ConvNeXt-Base Model</h4>
                         <p data-i18n="how_convnext_desc">89M parameter deep neural network trained on 28,000+ images from FaceForensics++ and Celeb-DF datasets.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">🔥</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_gradcam_title">Grad-CAM Visualization</h4>
                         <p data-i18n="how_gradcam_desc">See exactly where the model focuses its attention to make decisions, highlighting suspicious regions.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">🎯</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="6"/>
+                                <circle cx="12" cy="12" r="2"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_multi_title">Multi-Method Detection</h4>
                         <p data-i18n="how_multi_desc">Trained to detect Deepfakes, Face2Face, FaceSwap, NeuralTextures, and Celeb-DF manipulation methods.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">📊</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M3 3v18h18"/>
+                                <path d="m19 9-5 5-4-4-3 3"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_confidence_title">Confidence Scoring</h4>
                         <p data-i18n="how_confidence_desc">Get detailed probability distributions and confidence levels to understand the reliability of each prediction.</p>
                     </div>
                 </div>
                 <div class="limitations-section">
-                    <h4 data-i18n="limitations_title">⚠️ Limitations</h4>
+                    <h4><svg class="limitation-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> <span data-i18n="limitations_title">Limitations</span></h4>
                     <div class="limitations-list">
                         <span class="limitation-tag" data-i18n="limitation_1">Works best on frontal faces</span>
                         <span class="limitation-tag" data-i18n="limitation_2">May be less accurate on heavily compressed images</span>
@@ -282,11 +376,22 @@
                         <h3 data-i18n="result_analysis">Analysis Result</h3>
                         <div class="result-card" id="videoResultCard">
                             <div class="result-placeholder">
-                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+                                <div class="placeholder-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="18" height="10" x="3" y="11" rx="2"/>
+                                        <circle cx="12" cy="5" r="2"/>
+                                        <path d="M12 7v4"/>
+                                        <circle cx="8" cy="16" r="1" fill="currentColor"/>
+                                        <circle cx="16" cy="16" r="1" fill="currentColor"/>
+                                    </svg>
+                                </div>
                                 <p data-i18n="result_placeholder">Click "Analyze" to start detection</p>
                             </div>
                         </div>
                         <button class="btn-primary analyze-btn" id="analyzeVideoBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+                            </svg>
                             <span data-i18n="result_analyze_video">ANALYZE VIDEO</span>
                         </button>
                     </div>
@@ -310,22 +415,43 @@
                 <h3><span data-i18n="how_video_title">Video Analysis Process</span></h3>
                 <div class="how-it-works-grid">
                     <div class="how-card">
-                        <div class="how-icon">📹</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect width="18" height="18" x="3" y="3" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 21V9"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_frame_title">Frame Extraction</h4>
                         <p data-i18n="how_frame_desc">Up to 30 frames are sampled from the video to ensure comprehensive coverage while maintaining speed.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">👤</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="8" r="5"/>
+                                <path d="M20 21a8 8 0 1 0-16 0"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_face_title">Face Detection</h4>
                         <p data-i18n="how_face_desc">MTCNN detects and extracts faces from each frame for individual analysis.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">📈</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_timeline_title">Timeline Analysis</h4>
                         <p data-i18n="how_timeline_desc">See frame-by-frame predictions visualized on an interactive timeline.</p>
                     </div>
                     <div class="how-card">
-                        <div class="how-icon">⚠️</div>
+                        <div class="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <path d="M12 9v4"/>
+                                <path d="M12 17h.01"/>
+                            </svg>
+                        </div>
                         <h4 data-i18n="how_suspicious_title">Suspicious Frame Detection</h4>
                         <p data-i18n="how_suspicious_desc">The most suspicious frames are highlighted for closer inspection.</p>
                     </div>
@@ -344,6 +470,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="js/icons.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/security.js"></script>
     <script src="js/api.js"></script>
@@ -352,3 +479,4 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
