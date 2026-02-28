@@ -1,0 +1,40 @@
+name: Deploy backend to Hugging Face Space (exclude frontend)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Prepare backend-only folder (exclude frontend)
+        run: |
+          mkdir -p hf_deploy
+          rsync -av --delete \
+            --exclude '.git/' \
+            --exclude 'frontend/' \
+            ./ hf_deploy/
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd hf_deploy
+          git init
+          git branch -M main
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add -A
+          git commit -m "Deploy backend-only from GitHub (exclude frontend)" || echo "Nothing to commit"
+
+          git remote add hf "https://raniaamil:${HF_TOKEN}@huggingface.co/spaces/raniaamil/deepguard-api"
+          git push hf main --force
