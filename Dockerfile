@@ -27,7 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le code source
 COPY src/ ./src/
-COPY models/ ./models/
 
 # Créer le dossier de logs
 RUN mkdir -p logs
