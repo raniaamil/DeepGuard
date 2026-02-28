@@ -33,7 +33,7 @@ COPY models/ ./models/
 RUN mkdir -p logs
 
 # Exposer le port
-EXPOSE 8000
+EXPOSE 7860
 
 # Commande de démarrage
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "7860"]

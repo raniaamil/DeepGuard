@@ -16,6 +16,8 @@ import psutil
 import os
 import tempfile
 import numpy as np
+from huggingface_hub import hf_hub_download
+from pathlib import Path
 
 from .inference_v3 import get_predictor
 from .utils import (
@@ -113,17 +115,24 @@ async def log_requests(request: Request, call_next):
 async def startup_event():
     logger.info("Starting DeepGuard API v2 Enhanced...")
 
-    model_path = Path(__file__).parent.parent.parent / 'models' / 'best_convnext_deepguard_v3.pth'
+    token = os.getenv("HF_TOKEN")
 
-    if not model_path.exists():
+    model_path = hf_hub_download(
+        repo_id="raniaamil/deepguard-convnext",
+        filename="best_convnext_deepguard_v3.pth",
+        token=token,
+    )
+
+    model_path = Path(model_path) 
+
+    if not model_path.is_file():
         logger.error(f"Model not found: {model_path}")
         raise FileNotFoundError(f"ConvNeXt model not found: {model_path}")
 
     logger.info(f"Loading ConvNeXt-Base Enhanced from: {model_path}")
-    get_predictor(model_path=str(model_path), device='cpu')
+    get_predictor(model_path=str(model_path), device="cpu")
 
     logger.info("DeepGuard API v2 Enhanced ready!")
-
 
 # ═══════════════════════════════════════════════════════════════════
 # HEALTH & INFO ENDPOINTS
