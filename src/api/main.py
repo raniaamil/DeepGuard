@@ -117,13 +117,16 @@ async def startup_event():
 
     token = os.getenv("HF_TOKEN")
 
+    if not token:
+        logger.warning("HF_TOKEN not found in environment variables")
+
     model_path = hf_hub_download(
         repo_id="raniaamil/deepguard-convnext",
         filename="best_convnext_deepguard_v3.pth",
-        token=token,
+        token=token
     )
 
-    model_path = Path(model_path) 
+    model_path = Path(model_path)
 
     if not model_path.is_file():
         logger.error(f"Model not found: {model_path}")
