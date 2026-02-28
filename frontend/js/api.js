@@ -5,7 +5,7 @@
 
 class DeepGuardAPI {
     constructor() {
-        this.baseURL = 'http://localhost:8000';
+        this.baseURL = 'https://raniaamil-deepguard-api.hf.space';
         this.timeout = 180000; // 3 minutes
     }
 
