@@ -1,10 +1,14 @@
 /**
- * DeepGuard Results Display - Enhanced Version with i18n & SVG Icons
+ * DeepGuard Results Display - Enhanced Version with FULL i18n & SVG Icons
+ * All dynamic text is now translated via i18n keys instead of using backend English strings.
  */
 
 class ResultsDisplay {
     constructor() {
         this.animationDuration = 800;
+        // Store last results so we can re-translate when language changes
+        this._lastImageResult = null;
+        this._lastVideoResult = null;
     }
 
     t(key) {
@@ -17,6 +21,8 @@ class ResultsDisplay {
 
     displayImageResults(result) {
         console.log('Displaying image results:', result);
+        this._lastImageResult = result;
+
         this.displayMainResult('imageResultCard', result);
         
         const explainSection = document.getElementById('imageExplainability');
@@ -35,6 +41,8 @@ class ResultsDisplay {
 
     displayVideoResults(result) {
         console.log('Displaying video results:', result);
+        this._lastVideoResult = result;
+
         this.displayMainResult('videoResultCard', result);
         
         const timelineSection = document.getElementById('videoTimeline');
@@ -84,10 +92,188 @@ class ResultsDisplay {
         `;
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    // TRANSLATED CONFIDENCE INTERPRETATION
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns translated confidence interpretation instead of using backend English text.
+     */
+    getTranslatedConfidenceInterpretation(confidence) {
+        let labelKey, descKey, color;
+
+        if (confidence >= 0.95) {
+            labelKey = 'conf_very_high';
+            descKey = 'conf_desc_very_high';
+            color = '#10B981';
+        } else if (confidence >= 0.85) {
+            labelKey = 'conf_high';
+            descKey = 'conf_desc_high';
+            color = '#34D399';
+        } else if (confidence >= 0.70) {
+            labelKey = 'conf_moderate';
+            descKey = 'conf_desc_moderate';
+            color = '#F59E0B';
+        } else if (confidence >= 0.55) {
+            labelKey = 'conf_low';
+            descKey = 'conf_desc_low';
+            color = '#EF4444';
+        } else {
+            labelKey = 'conf_uncertain';
+            descKey = 'conf_desc_uncertain';
+            color = '#6B7280';
+        }
+
+        return {
+            label: this.t(labelKey),
+            description: this.t(descKey),
+            color: color
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // TRANSLATED KEY POINTS & TECHNICAL DETAILS
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Generates translated key points based on the structured data from the API,
+     * instead of displaying the raw English strings from the backend.
+     */
+    getTranslatedKeyPoints(isFake, explainability) {
+        const stats = explainability?.attention_stats || {};
+        const regions = explainability?.suspicious_regions || [];
+        const keyPoints = [];
+
+        if (isFake) {
+            if (stats.high_attention_ratio > 0.3) {
+                keyPoints.push(this.t('kp_fake_extensive_anomalies'));
+            }
+            if (regions.length > 2) {
+                keyPoints.push(`${regions.length} ${this.t('kp_fake_suspicious_regions')}`);
+            }
+            if (stats.max_activation > 0.9) {
+                keyPoints.push(this.t('kp_fake_high_artifacts'));
+            }
+            if (keyPoints.length === 0) {
+                keyPoints.push(this.t('kp_fake_subtle_patterns'));
+            }
+        } else {
+            if (stats.mean_activation < 0.3) {
+                keyPoints.push(this.t('kp_real_no_anomalies'));
+            }
+            if (stats.std_activation < 0.2) {
+                keyPoints.push(this.t('kp_real_consistent_texture'));
+            }
+            if (keyPoints.length === 0) {
+                keyPoints.push(this.t('kp_real_authentic'));
+            }
+        }
+
+        return keyPoints;
+    }
+
+    /**
+     * Returns translated technical details.
+     */
+    getTranslatedTechnicalDetails(isFake) {
+        if (isFake) {
+            return [
+                this.t('td_fake_gan'),
+                this.t('td_fake_boundaries'),
+                this.t('td_fake_texture'),
+                this.t('td_fake_symmetry')
+            ];
+        } else {
+            return [
+                this.t('td_real_texture'),
+                this.t('td_real_lighting'),
+                this.t('td_real_resolution'),
+                this.t('td_real_proportions')
+            ];
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // TRANSLATED VIDEO INTERPRETATION
+    // ═══════════════════════════════════════════════════════════════════
+
+    getTranslatedVideoKeyPoints(result) {
+        const stats = result.analysis_stats || {};
+        const fakeCount = stats.frames_predicted_fake || 0;
+        const realCount = stats.frames_predicted_real || 0;
+        const total = fakeCount + realCount;
+        const isFake = result.is_deepfake;
+        const temporal = result.interpretation?.temporal_analysis || {};
+
+        const keyPoints = [];
+
+        if (isFake) {
+            if (total > 0 && fakeCount / total > 0.8) {
+                keyPoints.push(this.t('vi_fake_entire'));
+            } else if (total > 0 && fakeCount / total > 0.5) {
+                keyPoints.push(this.t('vi_fake_majority'));
+            } else {
+                keyPoints.push(this.t('vi_fake_partial'));
+            }
+
+            if (temporal.has_suspicious_segments) {
+                keyPoints.push(`${this.t('vi_fake_segments')} ${temporal.suspicious_segments_count}`);
+            }
+        } else {
+            if (total > 0 && realCount / total > 0.9) {
+                keyPoints.push(this.t('vi_real_clean'));
+            } else {
+                keyPoints.push(this.t('vi_real_ambiguous'));
+            }
+        }
+
+        return keyPoints;
+    }
+
+    getTranslatedVideoConfidenceLevel(confidence) {
+        if (confidence >= 0.9) {
+            return { label: this.t('vi_conf_very_high'), color: '#10B981' };
+        } else if (confidence >= 0.75) {
+            return { label: this.t('vi_conf_high'), color: '#34D399' };
+        } else if (confidence >= 0.6) {
+            return { label: this.t('vi_conf_moderate'), color: '#F59E0B' };
+        } else {
+            return { label: this.t('vi_conf_low'), color: '#EF4444' };
+        }
+    }
+
+    getTranslatedVideoRecommendation(isFake, confidence, fakeCount, total) {
+        if (isFake) {
+            if (confidence >= 0.85 && total > 0 && fakeCount / total > 0.7) {
+                return this.t('vi_rec_fake_high');
+            } else if (confidence >= 0.7) {
+                return this.t('vi_rec_fake_medium');
+            } else {
+                return this.t('vi_rec_fake_low');
+            }
+        } else {
+            if (confidence >= 0.85) {
+                return this.t('vi_rec_real_high');
+            } else if (confidence >= 0.7) {
+                return this.t('vi_rec_real_medium');
+            } else {
+                return this.t('vi_rec_real_low');
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // HTML GENERATION
+    // ═══════════════════════════════════════════════════════════════════
+
     generateExplainabilityHTML(result) {
         const explainability = result.explainability || {};
         const confidence = result.confidence;
         const isReal = !result.is_deepfake;
+        const isFake = result.is_deepfake;
+
+        // Get translated confidence interpretation
+        const confInterp = this.getTranslatedConfidenceInterpretation(confidence);
 
         let html = '<div class="explainability-grid">';
 
@@ -102,12 +288,10 @@ class ResultsDisplay {
                         <span class="gauge-label">${this.t('explain_confidence')}</span>
                     </div>
                 </div>
-                ${explainability.confidence_interpretation ? `
-                    <div class="confidence-interpretation">
-                        <div class="confidence-level" style="color: ${explainability.confidence_interpretation.color}">${explainability.confidence_interpretation.label}</div>
-                        <div class="confidence-desc">${explainability.confidence_interpretation.description}</div>
-                    </div>
-                ` : ''}
+                <div class="confidence-interpretation">
+                    <div class="confidence-level" style="color: ${confInterp.color}">${confInterp.label}</div>
+                    <div class="confidence-desc">${confInterp.description}</div>
+                </div>
             </div>
         `;
 
@@ -171,33 +355,33 @@ class ResultsDisplay {
             `;
         }
 
-        // Key findings
-        if (explainability.explanation) {
-            const explanation = explainability.explanation;
-            html += `
-                <div class="explain-card">
-                    <h4>${this.icon('sparkles', 20)} ${this.t('explain_findings')}</h4>
-                    <div class="key-points-list">
-                        ${explanation.key_points.map(point => `
-                            <div class="key-point">
-                                <span class="key-point-icon">${isReal ? this.icon('check', 16) : this.icon('warning', 16)}</span>
-                                <span class="key-point-text">${point}</span>
-                            </div>
-                        `).join('')}
-                    </div>
+        // Key findings — TRANSLATED (not from backend)
+        const keyPoints = this.getTranslatedKeyPoints(isFake, explainability);
+        const technicalDetails = this.getTranslatedTechnicalDetails(isFake);
+
+        html += `
+            <div class="explain-card">
+                <h4>${this.icon('sparkles', 20)} ${this.t('explain_findings')}</h4>
+                <div class="key-points-list">
+                    ${keyPoints.map(point => `
+                        <div class="key-point">
+                            <span class="key-point-icon">${isReal ? this.icon('check', 16) : this.icon('warning', 16)}</span>
+                            <span class="key-point-text">${point}</span>
+                        </div>
+                    `).join('')}
                 </div>
-                <div class="explain-card">
-                    <h4>${this.icon('scan', 20)} ${this.t('explain_technical')}</h4>
-                    <div class="tech-details-list">
-                        ${explanation.technical_details.map(detail => `<div class="tech-detail">${detail}</div>`).join('')}
-                    </div>
+            </div>
+            <div class="explain-card">
+                <h4>${this.icon('scan', 20)} ${this.t('explain_technical')}</h4>
+                <div class="tech-details-list">
+                    ${technicalDetails.map(detail => `<div class="tech-detail">${detail}</div>`).join('')}
                 </div>
-            `;
-        }
+            </div>
+        `;
 
         html += '</div>';
 
-        // Recommendation
+        // Recommendation — TRANSLATED
         html += `
             <div class="recommendation-section">
                 <h4>${this.icon('info', 20)} ${this.t('explain_recommendation')}</h4>
@@ -250,7 +434,7 @@ class ResultsDisplay {
                         <div class="frame-card">
                             ${frame.thumbnail_base64 
                                 ? `<img class="frame-image" src="data:image/jpeg;base64,${frame.thumbnail_base64}" alt="Frame">`
-                                : '<div class="frame-image" style="background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;">No thumbnail</div>'
+                                : `<div class="frame-image" style="background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;">${this.t('no_thumbnail')}</div>`
                             }
                             <div class="frame-info">
                                 <div class="frame-timestamp">${this.icon('clock', 14)} ${frame.timestamp_formatted}</div>
@@ -268,7 +452,17 @@ class ResultsDisplay {
 
     generateVideoStatsHTML(result) {
         const metadata = result.video_metadata || {};
-        const interpretation = result.interpretation || {};
+        const stats = result.analysis_stats || {};
+        const isFake = result.is_deepfake;
+        const confidence = result.confidence;
+        const fakeCount = stats.frames_predicted_fake || 0;
+        const total = (stats.frames_predicted_fake || 0) + (stats.frames_predicted_real || 0);
+
+        // Translated key points (instead of backend English)
+        const keyPoints = this.getTranslatedVideoKeyPoints(result);
+        // Translated recommendation (instead of backend English)
+        const recommendation = this.getTranslatedVideoRecommendation(isFake, confidence, fakeCount, total);
+
         return `
             <div class="explain-card">
                 <h4>${this.icon('video', 20)} ${this.t('video_info')}</h4>
@@ -278,22 +472,20 @@ class ResultsDisplay {
                     <div class="video-stat"><div class="video-stat-value">${metadata.resolution || 'N/A'}</div><div class="video-stat-label">${this.t('video_resolution')}</div></div>
                 </div>
             </div>
-            ${interpretation.key_points ? `
+            ${keyPoints.length > 0 ? `
                 <div class="explain-card">
                     <h4>${this.icon('sparkles', 20)} ${this.t('explain_findings')}</h4>
                     <div class="key-points-list">
-                        ${interpretation.key_points.map(point => `
+                        ${keyPoints.map(point => `
                             <div class="key-point"><span class="key-point-icon">${this.icon('info', 16)}</span><span class="key-point-text">${point}</span></div>
                         `).join('')}
                     </div>
                 </div>
             ` : ''}
-            ${interpretation.recommendation ? `
-                <div class="recommendation-section">
-                    <h4>${this.icon('info', 20)} ${this.t('explain_recommendation')}</h4>
-                    <p class="recommendation-text">${interpretation.recommendation}</p>
-                </div>
-            ` : ''}
+            <div class="recommendation-section">
+                <h4>${this.icon('info', 20)} ${this.t('explain_recommendation')}</h4>
+                <p class="recommendation-text">${recommendation}</p>
+            </div>
         `;
     }
 
