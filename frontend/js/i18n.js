@@ -198,7 +198,68 @@ const translations = {
         // Recommendations - Fake
         rec_fake_high: "Strong indicators of deepfake manipulation detected. We strongly recommend NOT treating this media as authentic.",
         rec_fake_medium: "Significant signs of manipulation were detected. Additional verification is advised.",
-        rec_fake_low: "Some anomalies were detected but the result is uncertain. Professional analysis may be needed."
+        rec_fake_low: "Some anomalies were detected but the result is uncertain. Professional analysis may be needed.",
+
+        // Confidence interpretation (dynamic results)
+        conf_very_high: "Very high confidence.",
+        conf_high: "High confidence",
+        conf_moderate: "Moderate confidence",
+        conf_low: "Low confidence.",
+        conf_uncertain: "Very uncertain.",
+        conf_desc_very_high: "The model is very confident in its prediction.",
+        conf_desc_high: "The model is confident in its prediction.",
+        conf_desc_moderate: "The model leans toward this prediction but with some uncertainty.",
+        conf_desc_low: "The model is uncertain; the result should be interpreted with caution.",
+        conf_desc_uncertain: "The model cannot make a reliable determination.",
+
+        // Explanation key points - Fake
+        kp_fake_extensive_anomalies: "Extensive anomaly regions detected on the face.",
+        kp_fake_suspicious_regions: "suspicious regions identified.",
+        kp_fake_high_artifacts: "High concentration of artifacts in certain areas.",
+        kp_fake_subtle_patterns: "Subtle manipulation patterns detected.",
+        // Explanation key points - Real
+        kp_real_no_anomalies: "No significant anomalies detected.",
+        kp_real_consistent_texture: "Consistent and natural facial texture.",
+        kp_real_authentic: "The image exhibits authentic characteristics.",
+
+        // Technical details - Fake
+        td_fake_gan: "GAN compression artifact analysis.",
+        td_fake_boundaries: "Detection of inconsistencies at the face boundaries.",
+        td_fake_texture: "Verification of skin texture consistency.",
+        td_fake_symmetry: "Analysis of micro-expressions and facial symmetry.",
+        // Technical details - Real
+        td_real_texture: "Verification of texture consistency.",
+        td_real_lighting: "Lighting and shadow analysis.",
+        td_real_resolution: "Resolution and sharpness check.",
+        td_real_proportions: "Validation of facial proportions.",
+
+        // Video interpretation key points
+        vi_fake_entire: "Consistent manipulation detected throughout the entire video.",
+        vi_fake_majority: "Manipulation detected in the majority of analyzed frames.",
+        vi_fake_partial: "Signs of manipulation detected in certain portions of the video.",
+        vi_fake_segments: "Suspicious segments identified:",
+        vi_real_clean: "No signs of manipulation detected.",
+        vi_real_ambiguous: "The video appears authentic despite a few ambiguous frames.",
+
+        // Video confidence levels
+        vi_conf_very_high: "Very high confidence",
+        vi_conf_high: "High confidence",
+        vi_conf_moderate: "Moderate confidence",
+        vi_conf_low: "Low confidence",
+
+        // Video recommendations
+        vi_rec_fake_high: "This video shows strong indicators of manipulation. We strongly recommend not considering it authentic.",
+        vi_rec_fake_medium: "Significant signs of manipulation have been detected. A thorough manual review is recommended.",
+        vi_rec_fake_low: "Anomalies have been detected, but the result is uncertain. An expert review is recommended.",
+        vi_rec_real_high: "This video appears authentic. No signs of manipulation detected.",
+        vi_rec_real_medium: "The video appears likely authentic, but a few frames show minor ambiguities.",
+        vi_rec_real_low: "The model leans toward authenticity but with limited confidence. Further analysis may be helpful.",
+
+        // Misc dynamic
+        no_thumbnail: "No thumbnail",
+        deepfake_detected: "Deepfake detected",
+        authentic_image: "Authentic image",
+        authentic_video: "Authentic video"
     },
 
     fr: {
@@ -395,7 +456,68 @@ const translations = {
         // Recommendations - Fake
         rec_fake_high: "De forts indicateurs de manipulation deepfake détectés. Nous recommandons fortement de NE PAS considérer ce média comme authentique.",
         rec_fake_medium: "Des signes significatifs de manipulation ont été détectés. Une vérification supplémentaire est conseillée.",
-        rec_fake_low: "Certaines anomalies ont été détectées mais le résultat est incertain. Une analyse professionnelle peut être nécessaire."
+        rec_fake_low: "Certaines anomalies ont été détectées mais le résultat est incertain. Une analyse professionnelle peut être nécessaire.",
+
+        // Confidence interpretation (dynamic results)
+        conf_very_high: "Confiance très élevée.",
+        conf_high: "Confiance élevée",
+        conf_moderate: "Confiance modérée",
+        conf_low: "Confiance faible.",
+        conf_uncertain: "Très incertain.",
+        conf_desc_very_high: "Le modèle est très confiant dans sa prédiction.",
+        conf_desc_high: "Le modèle est confiant dans sa prédiction.",
+        conf_desc_moderate: "Le modèle penche vers cette prédiction mais avec une certaine incertitude.",
+        conf_desc_low: "Le modèle est incertain ; le résultat doit être interprété avec prudence.",
+        conf_desc_uncertain: "Le modèle ne peut pas faire de détermination fiable.",
+
+        // Explanation key points - Fake
+        kp_fake_extensive_anomalies: "Régions d'anomalies étendues détectées sur le visage.",
+        kp_fake_suspicious_regions: "régions suspectes identifiées.",
+        kp_fake_high_artifacts: "Forte concentration d'artefacts dans certaines zones.",
+        kp_fake_subtle_patterns: "Patterns de manipulation subtils détectés.",
+        // Explanation key points - Real
+        kp_real_no_anomalies: "Aucune anomalie significative détectée.",
+        kp_real_consistent_texture: "Texture faciale cohérente et naturelle.",
+        kp_real_authentic: "L'image présente des caractéristiques authentiques.",
+
+        // Technical details - Fake
+        td_fake_gan: "Analyse des artefacts de compression GAN.",
+        td_fake_boundaries: "Détection des incohérences aux frontières du visage.",
+        td_fake_texture: "Vérification de la cohérence de la texture de la peau.",
+        td_fake_symmetry: "Analyse des micro-expressions et de la symétrie faciale.",
+        // Technical details - Real
+        td_real_texture: "Vérification de la cohérence des textures.",
+        td_real_lighting: "Analyse de l'éclairage et des ombres.",
+        td_real_resolution: "Vérification de la résolution et de la netteté.",
+        td_real_proportions: "Validation des proportions faciales.",
+
+        // Video interpretation key points
+        vi_fake_entire: "Manipulation cohérente détectée tout au long de la vidéo.",
+        vi_fake_majority: "Manipulation détectée dans la majorité des images analysées.",
+        vi_fake_partial: "Signes de manipulation détectés dans certaines portions de la vidéo.",
+        vi_fake_segments: "Segments suspects identifiés :",
+        vi_real_clean: "Aucun signe de manipulation détecté.",
+        vi_real_ambiguous: "La vidéo semble authentique malgré quelques images ambiguës.",
+
+        // Video confidence levels
+        vi_conf_very_high: "Confiance très élevée",
+        vi_conf_high: "Confiance élevée",
+        vi_conf_moderate: "Confiance modérée",
+        vi_conf_low: "Confiance faible",
+
+        // Video recommendations
+        vi_rec_fake_high: "Cette vidéo présente de forts indicateurs de manipulation. Nous recommandons fortement de ne pas la considérer comme authentique.",
+        vi_rec_fake_medium: "Des signes significatifs de manipulation ont été détectés. Un examen manuel approfondi est recommandé.",
+        vi_rec_fake_low: "Des anomalies ont été détectées, mais le résultat est incertain. Un examen par un expert est recommandé.",
+        vi_rec_real_high: "Cette vidéo semble authentique. Aucun signe de manipulation détecté.",
+        vi_rec_real_medium: "La vidéo semble probablement authentique, mais quelques images montrent de légères ambiguïtés.",
+        vi_rec_real_low: "Le modèle penche vers l'authenticité mais avec une confiance limitée. Une analyse complémentaire peut être utile.",
+
+        // Misc dynamic
+        no_thumbnail: "Pas de miniature",
+        deepfake_detected: "Deepfake détecté",
+        authentic_image: "Image authentique",
+        authentic_video: "Vidéo authentique"
     },
 
     es: {
@@ -592,7 +714,68 @@ const translations = {
         // Recommendations - Fake
         rec_fake_high: "Se detectaron fuertes indicadores de manipulación deepfake. Recomendamos encarecidamente NO considerar este medio como auténtico.",
         rec_fake_medium: "Se detectaron signos significativos de manipulación. Se aconseja verificación adicional.",
-        rec_fake_low: "Se detectaron algunas anomalías pero el resultado es incierto. Puede ser necesario un análisis profesional."
+        rec_fake_low: "Se detectaron algunas anomalías pero el resultado es incierto. Puede ser necesario un análisis profesional.",
+
+        // Confidence interpretation (dynamic results)
+        conf_very_high: "Confianza muy alta.",
+        conf_high: "Confianza alta",
+        conf_moderate: "Confianza moderada",
+        conf_low: "Confianza baja.",
+        conf_uncertain: "Muy incierto.",
+        conf_desc_very_high: "El modelo tiene mucha confianza en su predicción.",
+        conf_desc_high: "El modelo tiene confianza en su predicción.",
+        conf_desc_moderate: "El modelo se inclina hacia esta predicción pero con cierta incertidumbre.",
+        conf_desc_low: "El modelo es incierto; el resultado debe interpretarse con precaución.",
+        conf_desc_uncertain: "El modelo no puede hacer una determinación fiable.",
+
+        // Explanation key points - Fake
+        kp_fake_extensive_anomalies: "Regiones extensas de anomalías detectadas en el rostro.",
+        kp_fake_suspicious_regions: "regiones sospechosas identificadas.",
+        kp_fake_high_artifacts: "Alta concentración de artefactos en ciertas áreas.",
+        kp_fake_subtle_patterns: "Patrones sutiles de manipulación detectados.",
+        // Explanation key points - Real
+        kp_real_no_anomalies: "No se detectaron anomalías significativas.",
+        kp_real_consistent_texture: "Textura facial consistente y natural.",
+        kp_real_authentic: "La imagen exhibe características auténticas.",
+
+        // Technical details - Fake
+        td_fake_gan: "Análisis de artefactos de compresión GAN.",
+        td_fake_boundaries: "Detección de inconsistencias en los límites del rostro.",
+        td_fake_texture: "Verificación de consistencia de la textura de la piel.",
+        td_fake_symmetry: "Análisis de micro-expresiones y simetría facial.",
+        // Technical details - Real
+        td_real_texture: "Verificación de consistencia de textura.",
+        td_real_lighting: "Análisis de iluminación y sombras.",
+        td_real_resolution: "Verificación de resolución y nitidez.",
+        td_real_proportions: "Validación de proporciones faciales.",
+
+        // Video interpretation key points
+        vi_fake_entire: "Manipulación consistente detectada a lo largo de todo el video.",
+        vi_fake_majority: "Manipulación detectada en la mayoría de los cuadros analizados.",
+        vi_fake_partial: "Signos de manipulación detectados en ciertas porciones del video.",
+        vi_fake_segments: "Segmentos sospechosos identificados:",
+        vi_real_clean: "No se detectaron signos de manipulación.",
+        vi_real_ambiguous: "El video parece auténtico a pesar de algunos cuadros ambiguos.",
+
+        // Video confidence levels
+        vi_conf_very_high: "Confianza muy alta",
+        vi_conf_high: "Confianza alta",
+        vi_conf_moderate: "Confianza moderada",
+        vi_conf_low: "Confianza baja",
+
+        // Video recommendations
+        vi_rec_fake_high: "Este video muestra fuertes indicadores de manipulación. Recomendamos encarecidamente no considerarlo auténtico.",
+        vi_rec_fake_medium: "Se detectaron signos significativos de manipulación. Se recomienda una revisión manual exhaustiva.",
+        vi_rec_fake_low: "Se detectaron anomalías, pero el resultado es incierto. Se recomienda una revisión por un experto.",
+        vi_rec_real_high: "Este video parece auténtico. No se detectaron signos de manipulación.",
+        vi_rec_real_medium: "El video parece probablemente auténtico, pero algunos cuadros muestran ambigüedades menores.",
+        vi_rec_real_low: "El modelo se inclina hacia la autenticidad pero con confianza limitada. Un análisis adicional puede ser útil.",
+
+        // Misc dynamic
+        no_thumbnail: "Sin miniatura",
+        deepfake_detected: "Deepfake detectado",
+        authentic_image: "Imagen auténtica",
+        authentic_video: "Video auténtico"
     }
 };
 
@@ -653,6 +836,9 @@ class I18nManager {
         });
         
         this.updatePageTitle();
+
+        // Re-translate any dynamically generated results currently on screen
+        this.retranslateDynamicResults();
     }
 
     updatePageTitle() {
@@ -667,6 +853,28 @@ class I18nManager {
             const lang = btn.getAttribute('data-lang');
             btn.classList.toggle('active', lang === this.currentLang);
         });
+    }
+
+    /**
+     * Re-translate dynamically generated result sections when language changes.
+     * Uses stored result data to regenerate translated HTML.
+     */
+    retranslateDynamicResults() {
+        // Re-translate image results if they are currently displayed
+        if (window.resultsDisplay && window.resultsDisplay._lastImageResult) {
+            const imageResultsSection = document.getElementById('imageResults');
+            if (imageResultsSection && imageResultsSection.style.display !== 'none') {
+                window.resultsDisplay.displayImageResults(window.resultsDisplay._lastImageResult);
+            }
+        }
+
+        // Re-translate video results if they are currently displayed
+        if (window.resultsDisplay && window.resultsDisplay._lastVideoResult) {
+            const videoResultsSection = document.getElementById('videoResults');
+            if (videoResultsSection && videoResultsSection.style.display !== 'none') {
+                window.resultsDisplay.displayVideoResults(window.resultsDisplay._lastVideoResult);
+            }
+        }
     }
 
     init() {
