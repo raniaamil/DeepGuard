@@ -1,4 +1,10 @@
-# 🛡️ DeepGuard — AI Deepfake Detection
+---
+title: DeepGuard API
+sdk: docker
+pinned: false
+---
+
+#  DeepGuard — AI Deepfake Detection
 
 <p align="center">
   <strong>Détection de deepfakes par intelligence artificielle avec explicabilité complète</strong>
@@ -14,15 +20,15 @@
 
 ---
 
-## 🎯 Présentation
+##  Présentation
 
 DeepGuard est une application complète de détection de deepfakes combinant un modèle ConvNeXt-Base entraîné sur 28 000+ images avec une API FastAPI et une interface web moderne. Le système fournit une explicabilité complète via Grad-CAM, permettant de comprendre visuellement pourquoi une prédiction a été faite.
 
-**🌐 Démo live :** [deepguard.netlify.app](https://deepguard.netlify.app)
+** Démo live :** [deepguard.netlify.app](https://deep-guard.netlify.app)
 
 ---
 
-## ✨ Fonctionnalités
+##  Fonctionnalités
 
 - **Analyse d'images** — Détection deepfake avec heatmap Grad-CAM, score de confiance et détection de régions suspectes
 - **Analyse vidéo** — Analyse frame par frame avec timeline interactive, extraction des frames suspectes et analyse temporelle
@@ -33,7 +39,7 @@ DeepGuard est une application complète de détection de deepfakes combinant un 
 
 ---
 
-## 📊 Performances du modèle
+##  Performances du modèle
 
 | Métrique   | Score    |
 |------------|----------|
@@ -47,7 +53,7 @@ DeepGuard est une application complète de détection de deepfakes combinant un 
 
 ---
 
-## 🏗️ Architecture technique
+##  Architecture technique
 
 ```
 DeepGuard/
@@ -83,7 +89,7 @@ DeepGuard/
 
 ---
 
-## 🚀 Installation et lancement
+##  Installation et lancement
 
 ### Prérequis
 
@@ -124,7 +130,7 @@ docker run -p 7860:7860 -e HF_TOKEN=your_token deepguard-api
 
 ---
 
-## 📡 Endpoints API
+##  Endpoints API
 
 | Méthode | Endpoint              | Description                           |
 |---------|-----------------------|---------------------------------------|
@@ -140,7 +146,7 @@ docker run -p 7860:7860 -e HF_TOKEN=your_token deepguard-api
 
 ---
 
-## 🛠️ Stack technique
+##  Stack technique
 
 **Backend :** Python, FastAPI, PyTorch, timm (ConvNeXt-Base), OpenCV, facenet-pytorch (MTCNN), albumentations
 
@@ -152,13 +158,13 @@ docker run -p 7860:7860 -e HF_TOKEN=your_token deepguard-api
 
 ---
 
-## 📄 Licence
+##  Licence
 
 Ce projet est distribué sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-## 👤 Auteure
+##  Auteure
 
 **Rania AMIL** — Conceptrice Développeuse d'Applications · Aspirante Ingénieure ML
 
