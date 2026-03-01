@@ -1,4 +1,4 @@
-# 🏗️ DeepGuard — Architecture Technique
+#  DeepGuard — Architecture Technique
 
 ## Vue d'ensemble
 

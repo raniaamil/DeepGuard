@@ -1,6 +1,6 @@
 /**
- * DeepGuard Upload Handler - Enhanced Version 2.0
- * Gestion des uploads avec support Grad-CAM et timeline vidéo
+ * DeepGuard Upload Handler - Enhanced Version 2.1
+ * With animated progress bar for long analyses
  */
 
 class UploadHandler {
@@ -9,6 +9,7 @@ class UploadHandler {
         this.currentVideoFile = null;
         this.currentVideoUrl = null;
         this._currentVideoObjectUrl = null;
+        this._progressInterval = null;
         this.init();
     }
 
@@ -112,7 +113,6 @@ class UploadHandler {
     }
 
     setupUrlUploads() {
-        // Image URL
         const loadImageUrlBtn = document.getElementById('loadImageUrl');
         const imageUrlInput = document.getElementById('imageUrlInput');
 
@@ -131,7 +131,6 @@ class UploadHandler {
             });
         }
 
-        // Video URL
         const loadVideoUrlBtn = document.getElementById('loadVideoUrl');
         const videoUrlInput = document.getElementById('videoUrlInput');
 
@@ -149,6 +148,147 @@ class UploadHandler {
                 }
             });
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PROGRESS BAR
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Show loading overlay with animated progress bar
+     * @param {string} type - 'image' or 'video'
+     */
+    showProgress(type) {
+        const overlay = document.getElementById('loadingOverlay');
+        if (!overlay) return;
+
+        const isVideo = type === 'video';
+        const title = this.t('loading_analyzing');
+        const subtitle = isVideo ? this.t('loading_video') : this.t('loading_image');
+
+        // Steps for the progress bar
+        const steps = isVideo
+            ? [
+                { key: 'loading_step_upload', fallback: 'Uploading video...' },
+                { key: 'loading_step_extracting', fallback: 'Extracting frames...' },
+                { key: 'loading_step_faces', fallback: 'Detecting faces...' },
+                { key: 'loading_step_analyzing', fallback: 'Analyzing frames...' },
+                { key: 'loading_step_generating', fallback: 'Generating results...' }
+              ]
+            : [
+                { key: 'loading_step_upload', fallback: 'Uploading image...' },
+                { key: 'loading_step_processing', fallback: 'Processing image...' },
+                { key: 'loading_step_gradcam', fallback: 'Generating Grad-CAM...' },
+                { key: 'loading_step_generating', fallback: 'Generating results...' }
+              ];
+
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <h3 id="loadingText">${title}</h3>
+                <p id="loadingSubtext">${subtitle}</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span class="progress-step" id="progressStep">${this.t(steps[0].key) || steps[0].fallback}</span>
+                        <span class="progress-percent" id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <p class="progress-reassurance" id="progressReassurance">${this.t('loading_dont_leave')}</p>
+            </div>
+        `;
+
+        overlay.style.display = 'flex';
+
+        // Animate progress
+        this._startProgressAnimation(steps, isVideo);
+    }
+
+    /**
+     * Simulated progress animation that matches typical processing time
+     */
+    _startProgressAnimation(steps, isVideo) {
+        // Clear any existing interval
+        if (this._progressInterval) {
+            clearInterval(this._progressInterval);
+        }
+
+        const totalDuration = isVideo ? 30000 : 8000; // 30s video, 8s image
+        const startTime = Date.now();
+        let currentStepIndex = 0;
+
+        const fillEl = document.getElementById('progressFill');
+        const stepEl = document.getElementById('progressStep');
+        const percentEl = document.getElementById('progressPercent');
+        const reassuranceEl = document.getElementById('progressReassurance');
+
+        if (!fillEl) return;
+
+        this._progressInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            // Use an easing curve: fast at start, slows down approaching 90%
+            // Never reaches 100% until hideProgress() is called
+            const linearProgress = Math.min(elapsed / totalDuration, 1);
+            const easedProgress = 1 - Math.pow(1 - linearProgress, 0.4);
+            const percent = Math.min(Math.round(easedProgress * 90), 90);
+
+            if (fillEl) fillEl.style.width = `${percent}%`;
+            if (percentEl) percentEl.textContent = `${percent}%`;
+
+            // Update step text based on progress
+            const stepProgress = percent / 90;
+            const newStepIndex = Math.min(
+                Math.floor(stepProgress * steps.length),
+                steps.length - 1
+            );
+
+            if (newStepIndex !== currentStepIndex) {
+                currentStepIndex = newStepIndex;
+                if (stepEl) {
+                    stepEl.style.opacity = '0';
+                    setTimeout(() => {
+                        stepEl.textContent = this.t(steps[currentStepIndex].key) || steps[currentStepIndex].fallback;
+                        stepEl.style.opacity = '1';
+                    }, 200);
+                }
+            }
+
+            // Show reassurance messages for long waits
+            if (reassuranceEl && isVideo) {
+                if (elapsed > 15000 && elapsed < 15500) {
+                    reassuranceEl.textContent = this.t('loading_almost_there');
+                } else if (elapsed > 25000 && elapsed < 25500) {
+                    reassuranceEl.textContent = this.t('loading_final_steps');
+                }
+            }
+
+        }, 100);
+    }
+
+    /**
+     * Complete progress to 100% and hide overlay
+     */
+    hideProgress() {
+        if (this._progressInterval) {
+            clearInterval(this._progressInterval);
+            this._progressInterval = null;
+        }
+
+        const fillEl = document.getElementById('progressFill');
+        const percentEl = document.getElementById('progressPercent');
+        const stepEl = document.getElementById('progressStep');
+
+        if (fillEl) fillEl.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100%';
+        if (stepEl) stepEl.textContent = this.t('loading_step_done') || 'Done!';
+
+        // Short delay to show 100% before hiding
+        setTimeout(() => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }, 400);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -213,7 +353,6 @@ class UploadHandler {
             const fileSize = document.getElementById('imageFileSize');
             if (fileSize) fileSize.textContent = window.DeepGuardUtils.formatFileSize(file.size);
 
-            // Hide explainability sections until analysis
             this.hideExplainabilitySections('image');
             this.resetResultCard('imageResultCard');
 
@@ -260,16 +399,12 @@ class UploadHandler {
     }
 
     async handleImageUrl(url) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-
         try {
             if (!window.DeepGuardUtils.validateImageUrl(url)) {
                 throw new Error(this.t('error_invalid_url'));
             }
 
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = this.t('loading_url');
+            this.showProgress('image');
 
             const response = await fetch(url);
             if (!response.ok) throw new Error(this.t('error_load_image'));
@@ -278,29 +413,25 @@ class UploadHandler {
             const filename = window.DeepGuardUtils.getFilenameFromUrl(url) || 'image.jpg';
             const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
 
+            this.hideProgress();
             await this.handleImageFile(file);
 
             const imageUrlInput = document.getElementById('imageUrlInput');
             if (imageUrlInput) imageUrlInput.value = '';
 
         } catch (err) {
+            this.hideProgress();
             this.showError(err.message || this.t('error_load_image'));
-        } finally {
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
         }
     }
 
     async handleVideoUrl(url) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-
         try {
             if (!window.DeepGuardUtils.validateVideoUrl(url)) {
                 throw new Error(this.t('error_invalid_url'));
             }
 
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = this.t('loading_url');
+            this.showProgress('video');
 
             this.currentVideoFile = null;
             this.currentVideoUrl = url;
@@ -325,13 +456,14 @@ class UploadHandler {
             this.hideExplainabilitySections('video');
             this.resetResultCard('videoResultCard');
 
+            this.hideProgress();
+
             const videoUrlInput = document.getElementById('videoUrlInput');
             if (videoUrlInput) videoUrlInput.value = '';
 
         } catch (err) {
+            this.hideProgress();
             this.showError(err.message || this.t('error_load_video'));
-        } finally {
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
         }
     }
 
@@ -352,7 +484,7 @@ class UploadHandler {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // ANALYSIS METHODS
+    // ANALYSIS METHODS (with progress bar)
     // ═══════════════════════════════════════════════════════════════════
 
     async analyzeCurrentImage() {
@@ -361,26 +493,21 @@ class UploadHandler {
             return;
         }
 
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-        const loadingSubtext = document.getElementById('loadingSubtext');
         const analyzeBtn = document.getElementById('analyzeImageBtn');
 
         try {
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = this.t('loading_analyzing');
-            if (loadingSubtext) loadingSubtext.textContent = this.t('loading_image');
             if (analyzeBtn) analyzeBtn.disabled = true;
+            this.showProgress('image');
 
             const result = await window.deepGuardAPI.analyzeImage(this.currentImageFile, true);
             
-            // Display results using the results display module
+            this.hideProgress();
             window.resultsDisplay.displayImageResults(result);
 
         } catch (err) {
+            this.hideProgress();
             this.showError(err.message || this.t('error_analysis_image'));
         } finally {
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
             if (analyzeBtn) analyzeBtn.disabled = false;
         }
     }
@@ -391,16 +518,11 @@ class UploadHandler {
             return;
         }
 
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-        const loadingSubtext = document.getElementById('loadingSubtext');
         const analyzeBtn = document.getElementById('analyzeVideoBtn');
 
         try {
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            if (loadingText) loadingText.textContent = this.t('loading_analyzing');
-            if (loadingSubtext) loadingSubtext.textContent = this.t('loading_video');
             if (analyzeBtn) analyzeBtn.disabled = true;
+            this.showProgress('video');
 
             let result;
             if (this.currentVideoFile) {
@@ -409,6 +531,8 @@ class UploadHandler {
                 result = await window.deepGuardAPI.analyzeVideoUrl(this.currentVideoUrl, 30, true);
             }
 
+            this.hideProgress();
+
             if (result && result.success !== false) {
                 window.resultsDisplay.displayVideoResults(result);
             } else {
@@ -416,9 +540,9 @@ class UploadHandler {
             }
 
         } catch (err) {
+            this.hideProgress();
             this.showError(err.message || this.t('error_analysis_video'));
         } finally {
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
             if (analyzeBtn) analyzeBtn.disabled = false;
         }
     }
