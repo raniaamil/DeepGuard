@@ -1,6 +1,5 @@
 /**
- * DeepGuard Upload Handler - Enhanced Version 2.1
- * With animated progress bar for long analyses
+ * DeepGuard Upload Handler 
  */
 
 class UploadHandler {
