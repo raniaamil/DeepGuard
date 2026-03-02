@@ -12,7 +12,7 @@ API_URL = "http://localhost:8000"
 
 def test_metrics():
     """Test endpoint metrics"""
-    print("\n📊 Test METRICS...")
+    print("\n Test METRICS...")
     response = requests.get(f"{API_URL}/metrics")
     print(f"Status: {response.status_code}")
     data = response.json()
@@ -23,7 +23,7 @@ def test_metrics():
 
 def test_health_detailed():
     """Test health check détaillé"""
-    print("\n💚 Test HEALTH détaillé...")
+    print("\n Test HEALTH détaillé...")
     response = requests.get(f"{API_URL}/health")
     data = response.json()
     print(f"Status: {data['status']}")
@@ -33,7 +33,7 @@ def test_health_detailed():
 
 def test_invalid_file():
     """Test avec un fichier invalide"""
-    print("\n❌ Test fichier INVALIDE...")
+    print("\n Test fichier INVALIDE...")
     
     # Créer un faux fichier texte
     fake_file = ("test.txt", b"Not an image", "text/plain")
@@ -45,13 +45,13 @@ def test_invalid_file():
     
     print(f"Status: {response.status_code}")
     if response.status_code == 400:
-        print("✅ Erreur correctement détectée")
+        print(" Erreur correctement détectée")
         print(f"Message: {response.json()['detail']}")
 
 
 def test_batch_prediction(image_paths):
     """Test prédiction batch"""
-    print(f"\n📦 Test BATCH PREDICTION ({len(image_paths)} images)...")
+    print(f"\n Test BATCH PREDICTION ({len(image_paths)} images)...")
     
     files = []
     for path in image_paths:
@@ -61,7 +61,7 @@ def test_batch_prediction(image_paths):
             )
     
     if not files:
-        print("⚠️ Aucune image trouvée pour le test batch")
+        print(" Aucune image trouvée pour le test batch")
         return
     
     response = requests.post(f"{API_URL}/predict/batch", files=files)
@@ -83,10 +83,10 @@ def test_batch_prediction(image_paths):
 
 def test_performance(image_path, n_requests=10):
     """Test de performance"""
-    print(f"\n⚡ Test PERFORMANCE ({n_requests} requêtes)...")
+    print(f"\n Test PERFORMANCE ({n_requests} requêtes)...")
     
     if not Path(image_path).exists():
-        print(f"⚠️ Image non trouvée : {image_path}")
+        print(f" Image non trouvée : {image_path}")
         return
     
     times = []
@@ -107,7 +107,7 @@ def test_performance(image_path, n_requests=10):
         min_time = min(times)
         max_time = max(times)
         
-        print(f"✅ {len(times)} requêtes réussies")
+        print(f" {len(times)} requêtes réussies")
         print(f"   Temps moyen: {avg_time*1000:.2f} ms")
         print(f"   Min: {min_time*1000:.2f} ms")
         print(f"   Max: {max_time*1000:.2f} ms")
@@ -116,7 +116,7 @@ def test_performance(image_path, n_requests=10):
 
 if __name__ == "__main__":
     print("="*60)
-    print("🧪 TESTS AVANCÉS DE L'API DEEPGUARD")
+    print(" TESTS AVANCÉS DE L'API DEEPGUARD")
     print("="*60)
     
     try:
@@ -130,8 +130,8 @@ if __name__ == "__main__":
         # test_performance('test_image.jpg', n_requests=10)
         
         print("\n" + "="*60)
-        print("✅ TESTS TERMINÉS")
+        print(" TESTS TERMINÉS")
         print("="*60)
         
     except Exception as e:
-        print(f"\n❌ ERREUR : {e}")
+        print(f"\n ERREUR : {e}")

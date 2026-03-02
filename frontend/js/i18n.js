@@ -1,5 +1,5 @@
 /**
- * DeepGuard - Internationalization (i18n) - COMPLETE VERSION
+ * DeepGuard - Internationalization (i18n) 
  * Supported languages: EN, FR, ES
  */
 

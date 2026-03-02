@@ -1,5 +1,4 @@
 /**
- * DeepGuard API Client - Enhanced Version 2.0
  * Communication avec le backend FastAPI v2
  */
 

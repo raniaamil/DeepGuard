@@ -11,7 +11,7 @@ API_URL = "http://localhost:8000"
 
 def test_root():
     """Test endpoint root"""
-    print("\n1️⃣ Test ROOT endpoint...")
+    print("\n1️ Test ROOT endpoint...")
     response = requests.get(f"{API_URL}/")
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}")
@@ -20,7 +20,7 @@ def test_root():
 
 def test_health():
     """Test health check"""
-    print("\n2️⃣ Test HEALTH endpoint...")
+    print("\n2️ Test HEALTH endpoint...")
     response = requests.get(f"{API_URL}/health")
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}")
@@ -30,7 +30,7 @@ def test_health():
 
 def test_info():
     """Test model info"""
-    print("\n3️⃣ Test INFO endpoint...")
+    print("\n3️ Test INFO endpoint...")
     response = requests.get(f"{API_URL}/info")
     print(f"Status: {response.status_code}")
     data = response.json()
@@ -41,10 +41,10 @@ def test_info():
 
 def test_predict(image_path):
     """Test prédiction sur une image"""
-    print(f"\n4️⃣ Test PREDICT endpoint avec {image_path}...")
+    print(f"\n4️ Test PREDICT endpoint avec {image_path}...")
     
     if not Path(image_path).exists():
-        print(f"❌ Image non trouvée : {image_path}")
+        print(f" Image non trouvée : {image_path}")
         return
     
     # Envoyer l'image
@@ -56,7 +56,7 @@ def test_predict(image_path):
     
     if response.status_code == 200:
         result = response.json()
-        print(f"\n📊 Résultat :")
+        print(f"\n Résultat :")
         print(f"   Prédiction : {result['prediction']}")
         print(f"   Deepfake : {'OUI' if result['is_deepfake'] else 'NON'}")
         print(f"   Confidence : {result['confidence']*100:.2f}%")
@@ -65,12 +65,12 @@ def test_predict(image_path):
         print(f"      - Fake : {result['probabilities']['fake']*100:.2f}%")
         print(f"   Temps : {result['processing_time_ms']:.2f} ms")
     else:
-        print(f"❌ Erreur : {response.text}")
+        print(f" Erreur : {response.text}")
 
 
 if __name__ == "__main__":
     print("="*60)
-    print("🧪 TEST DE L'API DEEPGUARD")
+    print(" TEST DE L'API DEEPGUARD")
     print("="*60)
     
     try:
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         # test_predict("path/to/test_image.jpg")
         
         print("\n" + "="*60)
-        print("✅ TOUS LES TESTS PASSÉS !")
+        print(" TOUS LES TESTS PASSÉS !")
         print("="*60)
         
     except Exception as e:
-        print(f"\n❌ ERREUR : {e}")
+        print(f"\n ERREUR : {e}")

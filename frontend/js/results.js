@@ -1,6 +1,5 @@
 /**
- * DeepGuard Results Display - Enhanced Version with FULL i18n & SVG Icons
- * All dynamic text is now translated via i18n keys instead of using backend English strings.
+ * All dynamic text is translated via i18n keys instead of using backend English strings.
  */
 
 class ResultsDisplay {

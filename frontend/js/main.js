@@ -1,5 +1,4 @@
 /**
- * DeepGuard Main JavaScript - Enhanced Version 2.0
  * Application principale
  */
 

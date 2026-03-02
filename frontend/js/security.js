@@ -1,5 +1,4 @@
 /**
- * DeepGuard Security Module
  * Protection XSS, validation, sanitization
  */
 
@@ -101,7 +100,6 @@ const DeepGuardSecurity = {
             return { valid: false, error: 'This field is required', value: '' };
         }
         
-        // Check length
         if (input.length < minLength) {
             return { valid: false, error: `Minimum ${minLength} characters required`, value: input };
         }
