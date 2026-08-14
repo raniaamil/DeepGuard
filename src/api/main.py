@@ -25,6 +25,12 @@ from .utils import (
     validate_image_content,
     validate_image_dimensions,
 )
+from .url_guard import (
+    BlockedURLError,
+    MAX_REDIRECTS,
+    validate_public_url,
+    validate_redirect_target,
+)
 from .logger import logger
 
 # Import enhanced video module
@@ -401,6 +407,13 @@ async def predict_video_from_url(
 
     logger.info(f"Video analysis from URL: {url}")
 
+    # Protection SSRF : schéma + IP résolue validés AVANT toute connexion
+    try:
+        url = validate_public_url(url)
+    except BlockedURLError as e:
+        logger.warning(f"Blocked URL rejected: {url} ({e.reason})")
+        raise HTTPException(status_code=400, detail="The provided URL is not allowed.")
+
     video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     path_ext = Path(url.split('?')[0]).suffix.lower()
 
@@ -411,31 +424,69 @@ async def predict_video_from_url(
     temp_video_path = None
 
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            async with client.stream("GET", url, headers={"User-Agent": "DeepGuard/2.0"}) as resp:
-                if resp.status_code >= 400:
-                    raise HTTPException(status_code=400, detail=f"Unable to download video (HTTP {resp.status_code}).")
+        # follow_redirects=False : chaque saut est revalidé manuellement pour
+        # empêcher qu'un domaine public ne redirige vers une adresse interne.
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+            current_url = url
 
-                content_type = (resp.headers.get("content-type") or "").lower()
-                file_ext = path_ext if path_ext in video_extensions else _ext_from_video_content_type(content_type)
+            for _ in range(MAX_REDIRECTS + 1):
+                async with client.stream(
+                    "GET", current_url, headers={"User-Agent": "DeepGuard/2.0"}
+                ) as resp:
+                    if resp.is_redirect:
+                        location = resp.headers.get("location")
+                        if not location:
+                            raise HTTPException(
+                                status_code=400, detail="Unable to download video."
+                            )
 
-                if file_ext not in video_extensions:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Unsupported URL format. Extension={path_ext or '(none)'}"
-                    )
+                        next_url = str(httpx.URL(current_url).join(location))
+                        try:
+                            current_url = validate_redirect_target(next_url)
+                        except BlockedURLError as e:
+                            logger.warning(
+                                f"Blocked redirect target: {next_url} ({e.reason})"
+                            )
+                            raise HTTPException(
+                                status_code=400,
+                                detail="The provided URL is not allowed.",
+                            )
+                        continue
 
-                temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
+                    if resp.status_code >= 400:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Unable to download video (HTTP {resp.status_code}).",
+                        )
 
-                size = 0
-                with open(temp_video_path, "wb") as f:
-                    async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
-                        if not chunk:
-                            continue
-                        size += len(chunk)
-                        if size > max_size_bytes:
-                            raise HTTPException(status_code=400, detail="Video too large (>50MB).")
-                        f.write(chunk)
+                    content_type = (resp.headers.get("content-type") or "").lower()
+                    file_ext = path_ext if path_ext in video_extensions else _ext_from_video_content_type(content_type)
+
+                    if file_ext not in video_extensions:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Unsupported URL format. Extension={path_ext or '(none)'}"
+                        )
+
+                    # Rejet en amont si le serveur annonce une taille excessive
+                    declared_length = resp.headers.get("content-length")
+                    if declared_length and declared_length.isdigit() and int(declared_length) > max_size_bytes:
+                        raise HTTPException(status_code=400, detail="Video too large (>50MB).")
+
+                    temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
+
+                    size = 0
+                    with open(temp_video_path, "wb") as f:
+                        async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
+                            if not chunk:
+                                continue
+                            size += len(chunk)
+                            if size > max_size_bytes:
+                                raise HTTPException(status_code=400, detail="Video too large (>50MB).")
+                            f.write(chunk)
+                    break
+            else:
+                raise HTTPException(status_code=400, detail="Too many redirects.")
 
         file_size_mb = size / (1024 * 1024)
         logger.info(f"Video downloaded: {temp_video_path} ({file_size_mb:.2f}MB)")
@@ -474,8 +525,8 @@ async def predict_video_from_url(
         raise
     except Exception as e:
         stats.record_error()
-        logger.error(f"URL video error: {e}")
-        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+        logger.error(f"URL video error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Video analysis failed.")
     finally:
         try:
             if temp_video_path and temp_video_path.exists():
