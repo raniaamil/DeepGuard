@@ -7,6 +7,9 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Request, Query, Bo
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from PIL import Image
 import io
 import time
@@ -52,6 +55,16 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Rate limiting par IP.
+# Les endpoints de prédiction sont coûteux (MTCNN + jusqu'à 60 inférences
+# ConvNeXt sur CPU) : sans limite, quelques requêtes concurrentes saturent
+# l'instance. La limite s'applique par adresse IP cliente.
+PREDICT_RATE_LIMIT = "10/minute"
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 app.add_middleware(
@@ -237,7 +250,9 @@ async def get_metrics():
 # ═══════════════════════════════════════════════════════════════════
 
 @app.post("/predict")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_deepfake(
+    request: Request,
     file: UploadFile = File(...),
     include_gradcam: bool = Query(True, description="Include Grad-CAM explainability")
 ):
@@ -306,7 +321,9 @@ def _ext_from_video_content_type(ct: str) -> str:
 
 
 @app.post("/predict/video")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_video(
+    request: Request,
     file: UploadFile = File(...),
     max_frames: int = Query(30, ge=5, le=60, description="Maximum frames to analyze"),
     include_thumbnails: bool = Query(True, description="Include frame thumbnails")
@@ -391,7 +408,9 @@ async def predict_video(
 
 
 @app.post("/predict/video/url")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_video_from_url(
+    request: Request,
     payload: URLPayload,
     max_frames: int = Query(30, ge=5, le=60),
     include_thumbnails: bool = Query(True)
