@@ -70,12 +70,25 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
+# Origines autorisées explicitement : le frontend de production et les
+# origines de développement local. allow_credentials=False car l'API est
+# sans authentification, sans cookie et sans session : aucun credential
+# n'est transmis, et "*" combiné à allow_credentials=True est de toute
+# façon rejeté par les navigateurs.
+ALLOWED_ORIGINS = [
+    "https://deep-guard.netlify.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type"],
 )
 
 
