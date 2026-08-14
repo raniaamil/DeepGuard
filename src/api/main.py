@@ -315,8 +315,8 @@ async def predict_deepfake(
         raise e
     except Exception as e:
         stats.record_error()
-        logger.error(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+        logger.error(f"Prediction error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Image analysis failed.")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -414,10 +414,14 @@ async def predict_video(
 
         return JSONResponse(content=result)
 
+    except HTTPException:
+        stats.record_error()
+        raise
+
     except Exception as e:
         stats.record_error()
-        logger.error(f"Video analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+        logger.error(f"Video analysis error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Video analysis failed.")
 
     finally:
         try:

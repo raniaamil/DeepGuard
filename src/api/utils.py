@@ -113,10 +113,10 @@ def validate_image_content(content: bytes) -> Image.Image:
         image = Image.open(io.BytesIO(content))
         return image
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=400,
-            detail=f"Corrupted or invalid image: {str(e)}"
+            detail="Corrupted or invalid image file."
         )
 
 
