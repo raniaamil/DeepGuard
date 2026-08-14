@@ -4,12 +4,18 @@ torchvision>=0.15.0
 
 # Computer Vision
 opencv-python>=4.8.0
-pillow>=10.0.0
+# pillow >=12.3.0 : correctifs PYSEC-2026-3493..3496 (décodage d'images)
+pillow>=12.3.0
 
 # API
-fastapi>=0.104.0
+# fastapi >=0.141.0 : requis pour être compatible avec starlette >=1.3.1
+# (fastapi <0.129 épingle starlette <0.51 et bloque les correctifs)
+fastapi>=0.141.0
 uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6
+# python-multipart >=0.0.31 : correctifs PYSEC-2026-3036..3040 (parsing des uploads)
+python-multipart>=0.0.31
+# starlette >=1.3.1 : correctifs PYSEC-2026-161/248/249/2280/2281
+starlette>=1.3.1
 slowapi>=0.1.9
 
 # Monitoring
