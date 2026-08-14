@@ -24,9 +24,12 @@ from pathlib import Path
 
 from .inference_v3 import get_predictor
 from .utils import (
+    MAX_FILE_SIZE,
+    read_upload_limited,
     validate_image_file,
     validate_image_content,
     validate_image_dimensions,
+    validate_video_content,
 )
 from .url_guard import (
     BlockedURLError,
@@ -266,7 +269,7 @@ async def predict_deepfake(
 
     try:
         validate_image_file(file.filename, file.content_type)
-        contents = await file.read()
+        contents = await read_upload_limited(file, MAX_FILE_SIZE)
         image = validate_image_content(contents)
         validate_image_dimensions(image)
 
@@ -306,6 +309,9 @@ async def predict_deepfake(
 # ═══════════════════════════════════════════════════════════════════
 # VIDEO PREDICTION ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════
+
+MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50 MB
+
 
 def _ext_from_video_content_type(ct: str) -> str:
     ct = (ct or '').lower()
@@ -351,11 +357,13 @@ async def predict_video(
                        f"Accepted: {', '.join(sorted(video_extensions))}"
             )
 
-    content = await file.read()
+    content = await read_upload_limited(file, MAX_VIDEO_SIZE)
     file_size_mb = len(content) / (1024 * 1024)
 
-    if file_size_mb > 50:
-        raise HTTPException(status_code=400, detail=f"File too large: {file_size_mb:.1f}MB. Maximum: 50MB")
+    # Vérification des magic bytes : l'extension et le Content-Type sont
+    # déclarés par le client et ne garantissent rien sur le contenu réel.
+    container = validate_video_content(content)
+    logger.info(f"Video container detected: {container}")
 
     temp_dir = tempfile.mkdtemp()
     temp_video_path = Path(temp_dir) / f"video_{int(time.time())}{file_ext}"
@@ -436,7 +444,7 @@ async def predict_video_from_url(
     video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     path_ext = Path(url.split('?')[0]).suffix.lower()
 
-    max_size_bytes = 50 * 1024 * 1024
+    max_size_bytes = MAX_VIDEO_SIZE
     timeout = httpx.Timeout(connect=15.0, read=60.0, write=60.0, pool=15.0)
 
     temp_dir = tempfile.mkdtemp()
@@ -495,6 +503,9 @@ async def predict_video_from_url(
                     temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
 
                     size = 0
+                    header = b""
+                    header_checked = False
+
                     with open(temp_video_path, "wb") as f:
                         async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
                             if not chunk:
@@ -502,7 +513,19 @@ async def predict_video_from_url(
                             size += len(chunk)
                             if size > max_size_bytes:
                                 raise HTTPException(status_code=400, detail="Video too large (>50MB).")
+
+                            # Valide les magic bytes dès les premiers octets,
+                            # avant de télécharger le reste du fichier.
+                            if not header_checked:
+                                header += chunk[:12]
+                                if len(header) >= 12:
+                                    validate_video_content(header)
+                                    header_checked = True
+
                             f.write(chunk)
+
+                    if not header_checked:
+                        validate_video_content(header)
                     break
             else:
                 raise HTTPException(status_code=400, detail="Too many redirects.")
