@@ -7,7 +7,8 @@ import time
 from pathlib import Path
 
 
-API_URL = "http://localhost:8000"
+# URL de l'API (port 7860, cohérent avec app.py et le Dockerfile)
+API_URL = "http://localhost:7860"
 
 
 def test_metrics():
@@ -47,38 +48,6 @@ def test_invalid_file():
     if response.status_code == 400:
         print(" Erreur correctement détectée")
         print(f"Message: {response.json()['detail']}")
-
-
-def test_batch_prediction(image_paths):
-    """Test prédiction batch"""
-    print(f"\n Test BATCH PREDICTION ({len(image_paths)} images)...")
-    
-    files = []
-    for path in image_paths:
-        if Path(path).exists():
-            files.append(
-                ('files', (Path(path).name, open(path, 'rb'), 'image/jpeg'))
-            )
-    
-    if not files:
-        print(" Aucune image trouvée pour le test batch")
-        return
-    
-    response = requests.post(f"{API_URL}/predict/batch", files=files)
-    
-    # Fermer les fichiers
-    for _, (_, f, _) in files:
-        f.close()
-    
-    print(f"Status: {response.status_code}")
-    if response.status_code == 200:
-        data = response.json()
-        print(f"Total: {data['total']}")
-        print(f"Success: {data['success']}")
-        print(f"Errors: {data['errors']}")
-        
-        for result in data['results']:
-            print(f"  - {result['filename']}: {result['prediction']} ({result['confidence']:.2%})")
 
 
 def test_performance(image_path, n_requests=10):
@@ -126,7 +95,6 @@ if __name__ == "__main__":
         test_invalid_file()
         
         # Tests avec images (à adapter selon tes images)
-        # test_batch_prediction(['image1.jpg', 'image2.jpg'])
         # test_performance('test_image.jpg', n_requests=10)
         
         print("\n" + "="*60)
