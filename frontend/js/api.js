@@ -64,6 +64,27 @@ class DeepGuardAPI {
     }
 
     /**
+     * Analyser une image depuis une URL
+     *
+     * Le téléchargement est fait par le backend (serveur à serveur), ce qui
+     * évite un fetch() cross-origin depuis le navigateur : la plupart des
+     * sites sources n'exposent pas Access-Control-Allow-Origin.
+     */
+    async analyzeImageUrl(url, includeGradcam = true) {
+        const params = new URLSearchParams({ include_gradcam: includeGradcam });
+
+        return await this.apiCall(`/predict/image/url?${params}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url }),
+            timeout: 120000
+        });
+    }
+
+    /**
      * Analyser une vidéo avec timeline
      */
     async analyzeVideo(videoFile, maxFrames = 30, includeThumbnails = true) {
