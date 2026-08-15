@@ -21,6 +21,8 @@ jobs:
           rsync -av --delete \
             --exclude '.git/' \
             --exclude 'frontend/' \
+            --exclude 'models/' \
+            --exclude '__pycache__/' \
             ./ hf_deploy/
 
       - name: Push to Hugging Face Space
