@@ -11,6 +11,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from PIL import Image
+import base64
 import io
 import time
 from pathlib import Path
@@ -317,6 +318,151 @@ async def predict_deepfake(
     except Exception as e:
         stats.record_error()
         logger.error(f"Prediction error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Image analysis failed.")
+
+
+@app.post("/predict/image/url")
+@limiter.limit(PREDICT_RATE_LIMIT)
+async def predict_image_from_url(
+    request: Request,
+    payload: URLPayload,
+    include_gradcam: bool = Query(True, description="Include Grad-CAM explainability")
+):
+    """
+    Analyze an image from URL for deepfake detection
+
+    Le téléchargement est fait côté serveur : le navigateur n'a donc pas à
+    requêter le site tiers, ce qui contourne les restrictions CORS des sites
+    sources (qui n'exposent pas Access-Control-Allow-Origin).
+
+    L'image téléchargée est renvoyée en base64 pour que le frontend puisse
+    l'afficher sans refaire de requête vers l'origine.
+
+    Body: { "url": "https://....jpg" }
+    """
+    url = payload.url
+    if not url or not isinstance(url, str):
+        raise HTTPException(status_code=400, detail="Missing or invalid 'url' field.")
+
+    logger.info(f"Image analysis from URL: {url}")
+
+    # Protection SSRF : schéma + IP résolue validés AVANT toute connexion.
+    # Même garde que /predict/video/url.
+    try:
+        url = validate_public_url(url)
+    except BlockedURLError as e:
+        logger.warning(f"Blocked URL rejected: {url} ({e.reason})")
+        raise HTTPException(status_code=400, detail="The provided URL is not allowed.")
+
+    max_size_bytes = MAX_FILE_SIZE
+    limit_mb = max_size_bytes / (1024 * 1024)
+    timeout = httpx.Timeout(connect=15.0, read=60.0, write=60.0, pool=15.0)
+
+    try:
+        # follow_redirects=False : chaque saut est revalidé manuellement pour
+        # empêcher qu'un domaine public ne redirige vers une adresse interne.
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+            current_url = url
+            contents = None
+
+            for _ in range(MAX_REDIRECTS + 1):
+                async with client.stream(
+                    "GET", current_url, headers={"User-Agent": "DeepGuard/2.0"}
+                ) as resp:
+                    if resp.is_redirect:
+                        location = resp.headers.get("location")
+                        if not location:
+                            raise HTTPException(
+                                status_code=400, detail="Unable to download image."
+                            )
+
+                        next_url = str(httpx.URL(current_url).join(location))
+                        try:
+                            current_url = validate_redirect_target(next_url)
+                        except BlockedURLError as e:
+                            logger.warning(
+                                f"Blocked redirect target: {next_url} ({e.reason})"
+                            )
+                            raise HTTPException(
+                                status_code=400,
+                                detail="The provided URL is not allowed.",
+                            )
+                        continue
+
+                    if resp.status_code >= 400:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Unable to download image (HTTP {resp.status_code}).",
+                        )
+
+                    # Rejet en amont si le serveur annonce une taille excessive
+                    declared_length = resp.headers.get("content-length")
+                    if declared_length and declared_length.isdigit() and int(declared_length) > max_size_bytes:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Image too large (>{limit_mb:.0f}MB).",
+                        )
+
+                    # Lecture bornée : on s'arrête dès le dépassement plutôt
+                    # que d'absorber tout le corps en mémoire.
+                    buffer = bytearray()
+                    async for chunk in resp.aiter_bytes(chunk_size=256 * 1024):
+                        if not chunk:
+                            continue
+                        buffer.extend(chunk)
+                        if len(buffer) > max_size_bytes:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Image too large (>{limit_mb:.0f}MB).",
+                            )
+
+                    contents = bytes(buffer)
+                    break
+            else:
+                raise HTTPException(status_code=400, detail="Too many redirects.")
+
+        if not contents:
+            raise HTTPException(status_code=400, detail="Downloaded image is empty.")
+
+        # Validation du contenu réel (le Content-Type annoncé n'est pas fiable)
+        image = validate_image_content(contents)
+        validate_image_dimensions(image)
+
+        predictor = get_predictor()
+        start_time = time.time()
+        result = predictor.predict(image, include_gradcam=include_gradcam)
+        processing_time = time.time() - start_time
+
+        result['processing_time_ms'] = round(processing_time * 1000, 2)
+        result['filename'] = Path(url.split('?')[0]).name or "image_from_url"
+        result['source_url'] = url
+        result['image_size'] = list(image.size)
+        result['file_size_kb'] = round(len(contents) / 1024, 2)
+
+        # Image renvoyée en base64 : permet l'aperçu côté frontend sans
+        # requête directe vers le site source (bloquée par CORS).
+        mime = Image.MIME.get(image.format or '', 'image/jpeg')
+        result['image_base64'] = base64.b64encode(contents).decode('ascii')
+        result['image_mime'] = mime
+
+        result['model_metrics'] = {
+            'accuracy': '98.05%',
+            'precision': '98.21%',
+            'recall': '98.84%',
+            'f1_score': '98.52%',
+            'auc_roc': '0.9928',
+            'training_samples': '28,000+'
+        }
+
+        stats.record_prediction(result['is_deepfake'], result['confidence'], 'image')
+        return JSONResponse(content=result)
+
+    except HTTPException:
+        stats.record_error()
+        raise
+    except Exception as e:
+        stats.record_error()
+        logger.error(f"URL image error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Image analysis failed.")
 
 

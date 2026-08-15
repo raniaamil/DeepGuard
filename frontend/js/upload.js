@@ -5,6 +5,7 @@
 class UploadHandler {
     constructor() {
         this.currentImageFile = null;
+        this.currentImageUrl = null;
         this.currentVideoFile = null;
         this.currentVideoUrl = null;
         this._currentVideoObjectUrl = null;
@@ -337,6 +338,7 @@ class UploadHandler {
         try {
             window.DeepGuardUtils.validateImageFile(file);
             this.currentImageFile = file;
+            this.currentImageUrl = null;
 
             await this.displayImagePreview(file);
 
@@ -403,17 +405,31 @@ class UploadHandler {
                 throw new Error(this.t('error_invalid_url'));
             }
 
-            this.showProgress('image');
+            // Aucun fetch() direct vers le site source : la plupart des sites
+            // n'exposent pas Access-Control-Allow-Origin, ce qui faisait
+            // échouer la lecture côté navigateur. C'est le backend qui
+            // télécharge l'image (serveur à serveur, hors contexte CORS) au
+            // moment de l'analyse, sur le modèle de handleVideoUrl.
+            this.currentImageFile = null;
+            this.currentImageUrl = url;
 
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(this.t('error_load_image'));
+            const previewImage = document.getElementById('previewImage');
+            if (previewImage) previewImage.removeAttribute('src');
 
-            const blob = await response.blob();
-            const filename = window.DeepGuardUtils.getFilenameFromUrl(url) || 'image.jpg';
-            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+            const resultsSection = document.getElementById('imageResults');
+            if (resultsSection) {
+                resultsSection.style.display = 'block';
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
 
-            this.hideProgress();
-            await this.handleImageFile(file);
+            const fileName = document.getElementById('imageFileName');
+            if (fileName) fileName.textContent = window.DeepGuardUtils.getFilenameFromUrl(url);
+
+            const fileSize = document.getElementById('imageFileSize');
+            if (fileSize) fileSize.textContent = '—';
+
+            this.hideExplainabilitySections('image');
+            this.resetResultCard('imageResultCard');
 
             const imageUrlInput = document.getElementById('imageUrlInput');
             if (imageUrlInput) imageUrlInput.value = '';
@@ -487,7 +503,7 @@ class UploadHandler {
     // ═══════════════════════════════════════════════════════════════════
 
     async analyzeCurrentImage() {
-        if (!this.currentImageFile) {
+        if (!this.currentImageFile && !this.currentImageUrl) {
             this.showError(this.t('error_no_image'));
             return;
         }
@@ -498,8 +514,28 @@ class UploadHandler {
             if (analyzeBtn) analyzeBtn.disabled = true;
             this.showProgress('image');
 
-            const result = await window.deepGuardAPI.analyzeImage(this.currentImageFile, true);
-            
+            let result;
+            if (this.currentImageFile) {
+                result = await window.deepGuardAPI.analyzeImage(this.currentImageFile, true);
+            } else {
+                result = await window.deepGuardAPI.analyzeImageUrl(this.currentImageUrl, true);
+
+                // L'aperçu vient de l'image renvoyée par le backend : le
+                // navigateur n'a jamais à requêter le site source.
+                if (result.image_base64) {
+                    const previewImage = document.getElementById('previewImage');
+                    if (previewImage) {
+                        const mime = result.image_mime || 'image/jpeg';
+                        previewImage.src = `data:${mime};base64,${result.image_base64}`;
+                    }
+                }
+
+                const fileSize = document.getElementById('imageFileSize');
+                if (fileSize && result.file_size_kb) {
+                    fileSize.textContent = window.DeepGuardUtils.formatFileSize(result.file_size_kb * 1024);
+                }
+            }
+
             this.hideProgress();
             window.resultsDisplay.displayImageResults(result);
 
@@ -585,6 +621,7 @@ class UploadHandler {
     reset(type) {
         if (type === 'image') {
             this.currentImageFile = null;
+            this.currentImageUrl = null;
             const previewImage = document.getElementById('previewImage');
             if (previewImage) previewImage.removeAttribute('src');
             

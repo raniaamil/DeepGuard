@@ -2,9 +2,47 @@
  * Communication avec le backend FastAPI v2
  */
 
+// URL de l'API en production (backend déployé sur Hugging Face Spaces)
+const PRODUCTION_API_URL = 'https://raniaamil-deepguard-api.hf.space';
+
+// Port de l'API en développement local (cohérent avec app.py et le Dockerfile)
+const LOCAL_API_PORT = 7860;
+
+/**
+ * Détermine l'URL de l'API à utiliser.
+ *
+ * Ordre de priorité :
+ *   1. window.DEEPGUARD_API_URL, si défini avant le chargement de ce script
+ *      (permet de surcharger sans modifier le code)
+ *   2. Détection automatique : si la page est servie depuis localhost ou
+ *      127.0.0.1, on cible l'API locale sur le même hôte, port 7860
+ *   3. URL de production par défaut
+ *
+ * Évite d'avoir à éditer ce fichier pour travailler en local — et donc le
+ * risque de committer par erreur une URL de développement.
+ */
+function resolveApiBaseUrl() {
+    if (typeof window !== 'undefined' && window.DEEPGUARD_API_URL) {
+        return String(window.DEEPGUARD_API_URL).replace(/\/+$/, '');
+    }
+
+    if (typeof window !== 'undefined' && window.location) {
+        const { hostname, protocol } = window.location;
+        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+
+        // protocol doit être http/https : en file:// le hostname est vide et
+        // l'origine vaut "null", cas dans lequel on garde la production.
+        if (isLocal && (protocol === 'http:' || protocol === 'https:')) {
+            return `${protocol}//${hostname}:${LOCAL_API_PORT}`;
+        }
+    }
+
+    return PRODUCTION_API_URL;
+}
+
 class DeepGuardAPI {
-    constructor() {
-        this.baseURL = 'https://raniaamil-deepguard-api.hf.space';
+    constructor(baseURL = null) {
+        this.baseURL = baseURL || resolveApiBaseUrl();
         this.timeout = 180000; // 3 minutes
     }
 
@@ -60,6 +98,27 @@ class DeepGuardAPI {
         return await this.apiCall(`/predict?${params}`, {
             method: 'POST',
             body: formData
+        });
+    }
+
+    /**
+     * Analyser une image depuis une URL
+     *
+     * Le téléchargement est fait par le backend (serveur à serveur), ce qui
+     * évite un fetch() cross-origin depuis le navigateur : la plupart des
+     * sites sources n'exposent pas Access-Control-Allow-Origin.
+     */
+    async analyzeImageUrl(url, includeGradcam = true) {
+        const params = new URLSearchParams({ include_gradcam: includeGradcam });
+
+        return await this.apiCall(`/predict/image/url?${params}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url }),
+            timeout: 120000
         });
     }
 
