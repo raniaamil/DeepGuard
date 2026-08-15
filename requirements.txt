@@ -16,6 +16,9 @@ uvicorn[standard]>=0.24.0
 python-multipart>=0.0.31
 # starlette >=1.3.1 : correctifs PYSEC-2026-161/248/249/2280/2281
 starlette>=1.3.1
+# pydantic : importé directement dans main.py (BaseModel).
+# Plancher aligné sur la contrainte de fastapi >=0.141 (pydantic>=2.9.0).
+pydantic>=2.9.0
 slowapi>=0.1.9
 
 # Monitoring
