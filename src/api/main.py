@@ -7,6 +7,9 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Request, Query, Bo
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from PIL import Image
 import io
 import time
@@ -14,6 +17,7 @@ from pathlib import Path
 from typing import List, Optional
 import psutil
 import os
+import shutil
 import tempfile
 import numpy as np
 from huggingface_hub import hf_hub_download
@@ -21,9 +25,18 @@ from pathlib import Path
 
 from .inference_v3 import get_predictor
 from .utils import (
+    MAX_FILE_SIZE,
+    read_upload_limited,
     validate_image_file,
     validate_image_content,
     validate_image_dimensions,
+    validate_video_content,
+)
+from .url_guard import (
+    BlockedURLError,
+    MAX_REDIRECTS,
+    validate_public_url,
+    validate_redirect_target,
 )
 from .logger import logger
 
@@ -47,13 +60,36 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Rate limiting par IP.
+# Les endpoints de prédiction sont coûteux (MTCNN + jusqu'à 60 inférences
+# ConvNeXt sur CPU) : sans limite, quelques requêtes concurrentes saturent
+# l'instance. La limite s'applique par adresse IP cliente.
+PREDICT_RATE_LIMIT = "10/minute"
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS
+# Origines autorisées explicitement : le frontend de production et les
+# origines de développement local. allow_credentials=False car l'API est
+# sans authentification, sans cookie et sans session : aucun credential
+# n'est transmis, et "*" combiné à allow_credentials=True est de toute
+# façon rejeté par les navigateurs.
+ALLOWED_ORIGINS = [
+    "https://deep-guard.netlify.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type"],
 )
 
 
@@ -231,7 +267,9 @@ async def get_metrics():
 # ═══════════════════════════════════════════════════════════════════
 
 @app.post("/predict")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_deepfake(
+    request: Request,
     file: UploadFile = File(...),
     include_gradcam: bool = Query(True, description="Include Grad-CAM explainability")
 ):
@@ -245,7 +283,7 @@ async def predict_deepfake(
 
     try:
         validate_image_file(file.filename, file.content_type)
-        contents = await file.read()
+        contents = await read_upload_limited(file, MAX_FILE_SIZE)
         image = validate_image_content(contents)
         validate_image_dimensions(image)
 
@@ -278,13 +316,16 @@ async def predict_deepfake(
         raise e
     except Exception as e:
         stats.record_error()
-        logger.error(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+        logger.error(f"Prediction error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Image analysis failed.")
 
 
 # ═══════════════════════════════════════════════════════════════════
 # VIDEO PREDICTION ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════
+
+MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50 MB
+
 
 def _ext_from_video_content_type(ct: str) -> str:
     ct = (ct or '').lower()
@@ -300,7 +341,9 @@ def _ext_from_video_content_type(ct: str) -> str:
 
 
 @app.post("/predict/video")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_video(
+    request: Request,
     file: UploadFile = File(...),
     max_frames: int = Query(30, ge=5, le=60, description="Maximum frames to analyze"),
     include_thumbnails: bool = Query(True, description="Include frame thumbnails")
@@ -328,11 +371,13 @@ async def predict_video(
                        f"Accepted: {', '.join(sorted(video_extensions))}"
             )
 
-    content = await file.read()
+    content = await read_upload_limited(file, MAX_VIDEO_SIZE)
     file_size_mb = len(content) / (1024 * 1024)
 
-    if file_size_mb > 50:
-        raise HTTPException(status_code=400, detail=f"File too large: {file_size_mb:.1f}MB. Maximum: 50MB")
+    # Vérification des magic bytes : l'extension et le Content-Type sont
+    # déclarés par le client et ne garantissent rien sur le contenu réel.
+    container = validate_video_content(content)
+    logger.info(f"Video container detected: {container}")
 
     temp_dir = tempfile.mkdtemp()
     temp_video_path = Path(temp_dir) / f"video_{int(time.time())}{file_ext}"
@@ -370,22 +415,26 @@ async def predict_video(
 
         return JSONResponse(content=result)
 
+    except HTTPException:
+        stats.record_error()
+        raise
+
     except Exception as e:
         stats.record_error()
-        logger.error(f"Video analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+        logger.error(f"Video analysis error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Video analysis failed.")
 
     finally:
-        try:
-            if temp_video_path.exists():
-                temp_video_path.unlink()
-            os.rmdir(temp_dir)
-        except Exception as e:
-            logger.warning(f"Cleanup error: {e}")
+        # rmtree supprime le dossier et son contenu : os.rmdir échouait dès
+        # qu'un fichier subsistait (écriture partielle, fichier annexe créé
+        # par le décodeur), laissant s'accumuler des fichiers orphelins.
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @app.post("/predict/video/url")
+@limiter.limit(PREDICT_RATE_LIMIT)
 async def predict_video_from_url(
+    request: Request,
     payload: URLPayload,
     max_frames: int = Query(30, ge=5, le=60),
     include_thumbnails: bool = Query(True)
@@ -401,41 +450,101 @@ async def predict_video_from_url(
 
     logger.info(f"Video analysis from URL: {url}")
 
+    # Protection SSRF : schéma + IP résolue validés AVANT toute connexion
+    try:
+        url = validate_public_url(url)
+    except BlockedURLError as e:
+        logger.warning(f"Blocked URL rejected: {url} ({e.reason})")
+        raise HTTPException(status_code=400, detail="The provided URL is not allowed.")
+
     video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.ogg'}
     path_ext = Path(url.split('?')[0]).suffix.lower()
 
-    max_size_bytes = 50 * 1024 * 1024
+    max_size_bytes = MAX_VIDEO_SIZE
     timeout = httpx.Timeout(connect=15.0, read=60.0, write=60.0, pool=15.0)
 
     temp_dir = tempfile.mkdtemp()
     temp_video_path = None
 
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            async with client.stream("GET", url, headers={"User-Agent": "DeepGuard/2.0"}) as resp:
-                if resp.status_code >= 400:
-                    raise HTTPException(status_code=400, detail=f"Unable to download video (HTTP {resp.status_code}).")
+        # follow_redirects=False : chaque saut est revalidé manuellement pour
+        # empêcher qu'un domaine public ne redirige vers une adresse interne.
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+            current_url = url
 
-                content_type = (resp.headers.get("content-type") or "").lower()
-                file_ext = path_ext if path_ext in video_extensions else _ext_from_video_content_type(content_type)
+            for _ in range(MAX_REDIRECTS + 1):
+                async with client.stream(
+                    "GET", current_url, headers={"User-Agent": "DeepGuard/2.0"}
+                ) as resp:
+                    if resp.is_redirect:
+                        location = resp.headers.get("location")
+                        if not location:
+                            raise HTTPException(
+                                status_code=400, detail="Unable to download video."
+                            )
 
-                if file_ext not in video_extensions:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Unsupported URL format. Extension={path_ext or '(none)'}"
-                    )
+                        next_url = str(httpx.URL(current_url).join(location))
+                        try:
+                            current_url = validate_redirect_target(next_url)
+                        except BlockedURLError as e:
+                            logger.warning(
+                                f"Blocked redirect target: {next_url} ({e.reason})"
+                            )
+                            raise HTTPException(
+                                status_code=400,
+                                detail="The provided URL is not allowed.",
+                            )
+                        continue
 
-                temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
+                    if resp.status_code >= 400:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Unable to download video (HTTP {resp.status_code}).",
+                        )
 
-                size = 0
-                with open(temp_video_path, "wb") as f:
-                    async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
-                        if not chunk:
-                            continue
-                        size += len(chunk)
-                        if size > max_size_bytes:
-                            raise HTTPException(status_code=400, detail="Video too large (>50MB).")
-                        f.write(chunk)
+                    content_type = (resp.headers.get("content-type") or "").lower()
+                    file_ext = path_ext if path_ext in video_extensions else _ext_from_video_content_type(content_type)
+
+                    if file_ext not in video_extensions:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Unsupported URL format. Extension={path_ext or '(none)'}"
+                        )
+
+                    # Rejet en amont si le serveur annonce une taille excessive
+                    declared_length = resp.headers.get("content-length")
+                    if declared_length and declared_length.isdigit() and int(declared_length) > max_size_bytes:
+                        raise HTTPException(status_code=400, detail="Video too large (>50MB).")
+
+                    temp_video_path = Path(temp_dir) / f"video_url_{int(time.time())}{file_ext}"
+
+                    size = 0
+                    header = b""
+                    header_checked = False
+
+                    with open(temp_video_path, "wb") as f:
+                        async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
+                            if not chunk:
+                                continue
+                            size += len(chunk)
+                            if size > max_size_bytes:
+                                raise HTTPException(status_code=400, detail="Video too large (>50MB).")
+
+                            # Valide les magic bytes dès les premiers octets,
+                            # avant de télécharger le reste du fichier.
+                            if not header_checked:
+                                header += chunk[:12]
+                                if len(header) >= 12:
+                                    validate_video_content(header)
+                                    header_checked = True
+
+                            f.write(chunk)
+
+                    if not header_checked:
+                        validate_video_content(header)
+                    break
+            else:
+                raise HTTPException(status_code=400, detail="Too many redirects.")
 
         file_size_mb = size / (1024 * 1024)
         logger.info(f"Video downloaded: {temp_video_path} ({file_size_mb:.2f}MB)")
@@ -474,15 +583,12 @@ async def predict_video_from_url(
         raise
     except Exception as e:
         stats.record_error()
-        logger.error(f"URL video error: {e}")
-        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+        logger.error(f"URL video error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Video analysis failed.")
     finally:
-        try:
-            if temp_video_path and temp_video_path.exists():
-                temp_video_path.unlink()
-            os.rmdir(temp_dir)
-        except Exception as e:
-            logger.warning(f"Cleanup error: {e}")
+        # Voir /predict/video : rmtree nettoie même si le téléchargement a
+        # laissé un fichier partiel dans le dossier temporaire.
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @app.get("/video/info")

@@ -5,8 +5,8 @@ Script pour tester l'API DeepGuard
 import requests
 from pathlib import Path
 
-# URL de l'API
-API_URL = "http://localhost:8000"
+# URL de l'API (port 7860, cohérent avec app.py et le Dockerfile)
+API_URL = "http://localhost:7860"
 
 
 def test_root():
