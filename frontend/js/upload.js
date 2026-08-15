@@ -10,6 +10,7 @@ class UploadHandler {
         this.currentVideoUrl = null;
         this._currentVideoObjectUrl = null;
         this._progressInterval = null;
+        this._previewToken = null;
         this.init();
     }
 
@@ -413,8 +414,9 @@ class UploadHandler {
             this.currentImageFile = null;
             this.currentImageUrl = url;
 
-            const previewImage = document.getElementById('previewImage');
-            if (previewImage) previewImage.removeAttribute('src');
+            // Aperçu provisoire : tentative de chargement direct, avec repli
+            // sur le placeholder si le site refuse le hotlinking.
+            this.tryDirectImagePreview(url);
 
             const resultsSection = document.getElementById('imageResults');
             if (resultsSection) {
@@ -423,7 +425,12 @@ class UploadHandler {
             }
 
             const fileName = document.getElementById('imageFileName');
-            if (fileName) fileName.textContent = window.DeepGuardUtils.getFilenameFromUrl(url);
+            if (fileName) {
+                fileName.textContent = window.DeepGuardUtils.getImageLabelFromUrl(
+                    url,
+                    this.t('result_image_from_url')
+                );
+            }
 
             const fileSize = document.getElementById('imageFileSize');
             if (fileSize) fileSize.textContent = '—';
@@ -482,6 +489,56 @@ class UploadHandler {
         }
     }
 
+    /**
+     * Bascule entre l'aperçu <img> et le placeholder "aperçu après analyse".
+     * Sans src, le navigateur afficherait une icône d'image cassée.
+     */
+    showImagePlaceholder(show) {
+        const previewImage = document.getElementById('previewImage');
+        const placeholder = document.getElementById('previewImagePlaceholder');
+
+        if (previewImage) previewImage.style.display = show ? 'none' : '';
+        if (placeholder) placeholder.style.display = show ? 'flex' : 'none';
+    }
+
+    /**
+     * Tente d'afficher directement l'URL dans le <img> avant l'analyse.
+     *
+     * Une balise <img> n'est pas soumise à la même politique que fetch() : le
+     * chargement réussit sur beaucoup de sites qui n'exposent pas
+     * Access-Control-Allow-Origin. En cas d'échec (hotlink protection, 403,
+     * URL non-image), onerror bascule proprement sur le placeholder plutôt
+     * que de laisser l'icône d'image cassée.
+     *
+     * L'aperçu définitif reste celui renvoyé par l'API (image_base64) : c'est
+     * lui qui garantit que l'on montre exactement les octets analysés.
+     */
+    tryDirectImagePreview(url) {
+        const previewImage = document.getElementById('previewImage');
+        if (!previewImage) return;
+
+        // Jeton anti-concurrence : si une autre URL est saisie pendant le
+        // chargement, la réponse tardive de la précédente est ignorée.
+        const token = Symbol('preview');
+        this._previewToken = token;
+
+        this.showImagePlaceholder(true);
+
+        const probe = new Image();
+        probe.onload = () => {
+            if (this._previewToken !== token) return;
+            previewImage.src = url;
+            previewImage.alt = this.t('result_image_from_url');
+            this.showImagePlaceholder(false);
+        };
+        probe.onerror = () => {
+            if (this._previewToken !== token) return;
+            previewImage.removeAttribute('src');
+            this.showImagePlaceholder(true);
+        };
+        probe.src = url;
+    }
+
     displayImagePreview(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -492,6 +549,10 @@ class UploadHandler {
                     previewImage.src = e.target.result;
                     previewImage.alt = file.name;
                 }
+                // Une éventuelle tentative d'aperçu par URL encore en vol ne
+                // doit pas écraser l'aperçu du fichier choisi ensuite.
+                this._previewToken = null;
+                this.showImagePlaceholder(false);
                 resolve();
             };
             reader.readAsDataURL(file);
@@ -526,7 +587,11 @@ class UploadHandler {
                     const previewImage = document.getElementById('previewImage');
                     if (previewImage) {
                         const mime = result.image_mime || 'image/jpeg';
+                        // Remplace l'aperçu provisoire : ces octets sont
+                        // exactement ceux qui ont été analysés.
+                        this._previewToken = null;
                         previewImage.src = `data:${mime};base64,${result.image_base64}`;
+                        this.showImagePlaceholder(false);
                     }
                 }
 
@@ -622,9 +687,11 @@ class UploadHandler {
         if (type === 'image') {
             this.currentImageFile = null;
             this.currentImageUrl = null;
+            this._previewToken = null;
             const previewImage = document.getElementById('previewImage');
             if (previewImage) previewImage.removeAttribute('src');
-            
+            this.showImagePlaceholder(true);
+
             const resultsSection = document.getElementById('imageResults');
             if (resultsSection) resultsSection.style.display = 'none';
             

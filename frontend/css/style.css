@@ -518,6 +518,33 @@ body::before {
     background: var(--bg-secondary);
 }
 
+/* Remplace l'aperçu tant que l'image n'est pas disponible : sans src, le
+   navigateur afficherait une icône d'image cassée. */
+.preview-placeholder {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px dashed rgba(139, 92, 246, 0.35);
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+}
+
+.preview-placeholder svg {
+    opacity: 0.5;
+}
+
+.preview-placeholder p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
 #previewVideo {
     width: 100%;
     max-height: 350px;

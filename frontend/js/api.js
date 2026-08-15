@@ -276,6 +276,32 @@ window.DeepGuardUtils = {
     },
 
     /**
+     * Libellé lisible pour une image chargée depuis une URL.
+     *
+     * getFilenameFromUrl() renvoie le dernier segment du chemin, ce qui donne
+     * des libellés sans intérêt quand l'URL ne se termine pas par un vrai nom
+     * de fichier (« images », « file », « img »…). On ne garde donc le segment
+     * que s'il porte une extension d'image ; sinon on retombe sur un libellé
+     * explicite fourni par l'appelant (traduit).
+     */
+    getImageLabelFromUrl(url, fallbackLabel = 'Image from URL') {
+        const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
+
+        try {
+            const segment = decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+            const ext = this.getExtension(segment);
+
+            if (segment && imageExts.includes(ext)) {
+                return segment;
+            }
+        } catch {
+            // URL invalide : on utilise le libellé de repli
+        }
+
+        return fallbackLabel;
+    },
+
+    /**
      * Crée un graphique de gauge SVG
      */
     createGaugeSVG(percentage, color, size = 180) {
