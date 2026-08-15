@@ -36,5 +36,22 @@ jobs:
           git add -A
           git commit -m "Deploy backend-only from GitHub (exclude frontend)" || echo "Nothing to commit"
 
-          git remote add hf "https://raniaamil:${HF_TOKEN}@huggingface.co/spaces/raniaamil/deepguard-api"
+          # Le token n'est jamais écrit dans l'URL du remote : il transite par
+          # un header d'autorisation stocké hors du dépôt déployé (config
+          # globale du runner), retiré immédiatement après le push.
+          # L'URL du remote reste propre, donc le token ne fuit ni via
+          # `git remote -v`, ni via hf_deploy/.git/config, ni dans les
+          # messages d'erreur de git.
+          AUTH_HEADER=$(printf 'user:%s' "$HF_TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH_HEADER"
+
+          cleanup() {
+            git config --global --unset-all http.https://huggingface.co/.extraheader || true
+          }
+          trap cleanup EXIT
+
+          git config --global http.https://huggingface.co/.extraheader \
+            "Authorization: Basic ${AUTH_HEADER}"
+
+          git remote add hf "https://huggingface.co/spaces/raniaamil/deepguard-api"
           git push hf main --force
