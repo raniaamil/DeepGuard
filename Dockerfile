@@ -1,5 +1,8 @@
 # Image de base avec Python
-FROM python:3.9-slim
+# 3.11 requis : les versions corrigées de fastapi (>=0.141), starlette
+# (>=1.3.1), pillow (>=12.3.0) et python-multipart (>=0.0.31) exigent
+# toutes Python >=3.10. Sur 3.9, pip échoue et le build du Space casse.
+FROM python:3.11-slim
 
 # Informations
 LABEL maintainer="Rania AMIL"
