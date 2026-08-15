@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import List, Optional
 import psutil
 import os
+import shutil
 import tempfile
 import numpy as np
 from huggingface_hub import hf_hub_download
@@ -424,12 +425,10 @@ async def predict_video(
         raise HTTPException(status_code=500, detail="Video analysis failed.")
 
     finally:
-        try:
-            if temp_video_path.exists():
-                temp_video_path.unlink()
-            os.rmdir(temp_dir)
-        except Exception as e:
-            logger.warning(f"Cleanup error: {e}")
+        # rmtree supprime le dossier et son contenu : os.rmdir échouait dès
+        # qu'un fichier subsistait (écriture partielle, fichier annexe créé
+        # par le décodeur), laissant s'accumuler des fichiers orphelins.
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @app.post("/predict/video/url")
@@ -587,12 +586,9 @@ async def predict_video_from_url(
         logger.error(f"URL video error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Video analysis failed.")
     finally:
-        try:
-            if temp_video_path and temp_video_path.exists():
-                temp_video_path.unlink()
-            os.rmdir(temp_dir)
-        except Exception as e:
-            logger.warning(f"Cleanup error: {e}")
+        # Voir /predict/video : rmtree nettoie même si le téléchargement a
+        # laissé un fichier partiel dans le dossier temporaire.
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @app.get("/video/info")
